@@ -1,15 +1,20 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import confetti from "canvas-confetti";
 
 export default function AvisoCard({ aviso }) {
   const [shown, setShown] = useState(false);
+  const audioRef = useRef(null);
+
+  // precargar audio
+  useEffect(() => {
+    audioRef.current = new Audio("/audio/alerta.ogg");
+  }, []);
 
   useEffect(() => {
     if (aviso.isNew && !shown) {
       // 🔊 sonido
-      const audio = new Audio("/audio/alerta.ogg");
-      audio.play().catch(() => {});
+      audioRef.current?.play().catch(() => {});
 
       // 🎉 confeti
       confetti({
@@ -18,10 +23,9 @@ export default function AvisoCard({ aviso }) {
         origin: { y: 0.6 },
       });
 
-      // marcar como mostrado
       setShown(true);
 
-      // opcional: limpiar el flag
+      // quitar flag después de 5 segundos
       setTimeout(() => {
         aviso.isNew = false;
       }, 5000);
@@ -36,7 +40,6 @@ export default function AvisoCard({ aviso }) {
         borderRadius: "10px",
         marginBottom: "10px",
         boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-        textAlign: "center",
       }}
     >
       <h3>{aviso.titulo}</h3>
