@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "../../supabaseClient";
-import AvisoCard from "../components/AvisoCard";
+import AvisoCard from "../components/AvisoCard.jsx";
 
 export default function DisplayPage() {
   const [avisos, setAvisos] = useState([]);
