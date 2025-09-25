@@ -10,13 +10,12 @@ export default function LoginPage() {
   const [newPassword, setNewPassword] = useState("");
   const [message, setMessage] = useState("");
   const [isSettingPassword, setIsSettingPassword] = useState(false);
-  const [token, setToken] = useState(null); // solo en cliente
+  const [token, setToken] = useState(null);
 
-  const searchParams = useSearchParams(); // SOLO en cliente
+  const searchParams = useSearchParams();
   const router = useRouter();
 
   useEffect(() => {
-    // Esto asegura que searchParams solo se use en cliente
     const accessToken = searchParams.get("access_token");
     const type = searchParams.get("type");
 
@@ -31,7 +30,6 @@ export default function LoginPage() {
     e.preventDefault();
     setMessage("");
 
-    // Login normal
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -48,14 +46,18 @@ export default function LoginPage() {
     e.preventDefault();
     setMessage("");
 
-    const accessToken = searchParams.get("access_token");
-    if (!accessToken) {
+    if (!token) {
       setMessage("❌ Token inválido");
       return;
     }
 
+    if (newPassword.length < 6) {
+      setMessage("❌ La contraseña debe tener al menos 6 caracteres");
+      return;
+    }
+
     const { error } = await supabase.auth.updateUser({
-      access_token: accessToken,
+      access_token: token,
       password: newPassword,
     });
 
@@ -108,13 +110,20 @@ export default function LoginPage() {
         )}
 
         {isSettingPassword ? (
-          <form onSubmit={handleSetPassword} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <form
+            onSubmit={handleSetPassword}
+            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+          >
             <input
               type="password"
               placeholder="Nueva contraseña"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ccc" }}
+              style={{
+                padding: "10px",
+                borderRadius: "8px",
+                border: "1px solid #ccc",
+              }}
               required
             />
             <button
@@ -133,13 +142,20 @@ export default function LoginPage() {
             </button>
           </form>
         ) : (
-          <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <form
+            onSubmit={handleLogin}
+            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+          >
             <input
               type="email"
               placeholder="Correo"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ccc" }}
+              style={{
+                padding: "10px",
+                borderRadius: "8px",
+                border: "1px solid #ccc",
+              }}
               required
             />
             <input
@@ -147,7 +163,11 @@ export default function LoginPage() {
               placeholder="Contraseña"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ccc" }}
+              style={{
+                padding: "10px",
+                borderRadius: "8px",
+                border: "1px solid #ccc",
+              }}
               required
             />
             <button
