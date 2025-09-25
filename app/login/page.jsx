@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "../../supabaseClient";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -12,9 +12,10 @@ export default function LoginPage() {
   const [isSettingPassword, setIsSettingPassword] = useState(false);
   const [token, setToken] = useState(null);
 
-  const searchParams = useSearchParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
+  // Solo usar searchParams dentro de useEffect (cliente)
   useEffect(() => {
     const accessToken = searchParams.get("access_token");
     const type = searchParams.get("type");
@@ -30,16 +31,10 @@ export default function LoginPage() {
     e.preventDefault();
     setMessage("");
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (error) {
-      setMessage("❌ Error: " + error.message);
-    } else {
-      router.push("/dashboard");
-    }
+    if (error) setMessage("❌ Error: " + error.message);
+    else router.push("/dashboard");
   };
 
   const handleSetPassword = async (e) => {
@@ -50,7 +45,6 @@ export default function LoginPage() {
       setMessage("❌ Token inválido");
       return;
     }
-
     if (newPassword.length < 6) {
       setMessage("❌ La contraseña debe tener al menos 6 caracteres");
       return;
@@ -61,13 +55,10 @@ export default function LoginPage() {
       password: newPassword,
     });
 
-    if (error) {
-      setMessage("❌ Error: " + error.message);
-    } else {
+    if (error) setMessage("❌ Error: " + error.message);
+    else {
       setMessage("✅ Contraseña establecida correctamente!");
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 1500);
+      setTimeout(() => router.push("/dashboard"), 1500);
     }
   };
 
@@ -119,11 +110,7 @@ export default function LoginPage() {
               placeholder="Nueva contraseña"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              style={{
-                padding: "10px",
-                borderRadius: "8px",
-                border: "1px solid #ccc",
-              }}
+              style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ccc" }}
               required
             />
             <button
@@ -151,11 +138,7 @@ export default function LoginPage() {
               placeholder="Correo"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              style={{
-                padding: "10px",
-                borderRadius: "8px",
-                border: "1px solid #ccc",
-              }}
+              style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ccc" }}
               required
             />
             <input
@@ -163,11 +146,7 @@ export default function LoginPage() {
               placeholder="Contraseña"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              style={{
-                padding: "10px",
-                borderRadius: "8px",
-                border: "1px solid #ccc",
-              }}
+              style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ccc" }}
               required
             />
             <button

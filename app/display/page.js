@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../../supabaseClient";
 import Image from "next/image";
@@ -18,11 +19,10 @@ export default function DisplayPage() {
     if (!error) {
       setAvisos(data);
       if (currentIndex >= data.length) setCurrentIndex(0);
-    } else {
-      console.error("❌ Error al cargar avisos:", error);
     }
   };
 
+  // Carga inicial + suscripción en tiempo real
   useEffect(() => {
     fetchAvisos();
 
@@ -35,12 +35,10 @@ export default function DisplayPage() {
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => supabase.removeChannel(channel);
   }, []);
 
-  // Rotación automática considerando videos
+  // Rotación automática de avisos
   useEffect(() => {
     if (avisos.length === 0) return;
 
@@ -55,10 +53,7 @@ export default function DisplayPage() {
         return () => video.removeEventListener("ended", handleEnded);
       }
     } else {
-      interval = setInterval(
-        () => setCurrentIndex((prev) => (prev + 1) % avisos.length),
-        ROTATION_TIME
-      );
+      interval = setInterval(() => setCurrentIndex((prev) => (prev + 1) % avisos.length), ROTATION_TIME);
       return () => clearInterval(interval);
     }
   }, [avisos, currentIndex]);
@@ -114,9 +109,7 @@ export default function DisplayPage() {
           </h2>
         )}
 
-        {aviso.tipo === "texto" && (
-          <p style={{ fontSize: "2rem", lineHeight: "1.5" }}>{aviso.descripcion}</p>
-        )}
+        {aviso.tipo === "texto" && <p style={{ fontSize: "2rem", lineHeight: "1.5" }}>{aviso.descripcion}</p>}
 
         {aviso.tipo === "video" && (
           <video
