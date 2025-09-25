@@ -1,7 +1,5 @@
-"use client";
-
-// Wrapper que evita problemas de SSR
-import LoginClient from "./loginClient";
+// Esta página se renderiza en servidor, solo importa el componente cliente
+import LoginClient from "./LoginClient";
 
 export default function LoginPage() {
   return <LoginClient />;

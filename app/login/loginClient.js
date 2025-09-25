@@ -16,7 +16,9 @@ export default function LoginClient() {
   const router = useRouter();
 
   useEffect(() => {
-    // Solo en cliente
+    // solo cliente
+    if (!searchParams) return;
+
     const accessToken = searchParams.get("access_token");
     const type = searchParams.get("type");
 
@@ -27,17 +29,22 @@ export default function LoginClient() {
     }
   }, [searchParams]);
 
-  // Login normal
   const handleLogin = async (e) => {
     e.preventDefault();
     setMessage("");
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setMessage("❌ Error: " + error.message);
-    else router.push("/dashboard");
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setMessage("❌ Error: " + error.message);
+    } else {
+      router.push("/dashboard");
+    }
   };
 
-  // Establecer contraseña desde magic link
   const handleSetPassword = async (e) => {
     e.preventDefault();
     setMessage("");
@@ -57,57 +64,32 @@ export default function LoginClient() {
       password: newPassword,
     });
 
-    if (error) setMessage("❌ Error: " + error.message);
-    else {
+    if (error) {
+      setMessage("❌ Error: " + error.message);
+    } else {
       setMessage("✅ Contraseña establecida correctamente!");
-      setTimeout(() => router.push("/dashboard"), 1500);
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 1500);
     }
   };
 
   return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "linear-gradient(135deg, #667eea, #764ba2)", fontFamily: "'Poppins', sans-serif", padding: "20px" }}>
-      <div style={{ background: "#fff", padding: "30px", borderRadius: "16px", width: "100%", maxWidth: "400px", boxShadow: "0 4px 20px rgba(0,0,0,0.2)", textAlign: "center" }}>
-        <h1 style={{ marginBottom: "20px", fontSize: "1.8rem" }}>
-          {isSettingPassword ? "Establecer contraseña" : "Iniciar sesión"}
-        </h1>
-
-        {message && <p style={{ marginBottom: "20px", color: message.startsWith("❌") ? "red" : "green" }}>{message}</p>}
+    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
+      <div style={{ background: "#fff", padding: "30px", borderRadius: "16px", maxWidth: "400px", width: "100%", textAlign: "center" }}>
+        <h1>{isSettingPassword ? "Establecer contraseña" : "Iniciar sesión"}</h1>
+        {message && <p style={{ color: message.startsWith("❌") ? "red" : "green" }}>{message}</p>}
 
         {isSettingPassword ? (
           <form onSubmit={handleSetPassword} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <input
-              type="password"
-              placeholder="Nueva contraseña"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ccc" }}
-              required
-            />
-            <button type="submit" style={{ padding: "12px", background: "#0070f3", color: "#fff", border: "none", borderRadius: "10px", cursor: "pointer", fontWeight: "600" }}>
-              Establecer contraseña
-            </button>
+            <input type="password" placeholder="Nueva contraseña" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+            <button type="submit">Establecer contraseña</button>
           </form>
         ) : (
           <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <input
-              type="email"
-              placeholder="Correo"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ccc" }}
-              required
-            />
-            <input
-              type="password"
-              placeholder="Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ccc" }}
-              required
-            />
-            <button type="submit" style={{ padding: "12px", background: "#0070f3", color: "#fff", border: "none", borderRadius: "10px", cursor: "pointer", fontWeight: "600" }}>
-              Iniciar sesión
-            </button>
+            <input type="email" placeholder="Correo" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input type="password" placeholder="Contraseña" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <button type="submit">Iniciar sesión</button>
           </form>
         )}
       </div>
