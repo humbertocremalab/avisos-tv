@@ -2,32 +2,37 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "../../supabaseClient";
-import { useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState(""); // contraseña para usuarios existentes
+  const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isSettingPassword, setIsSettingPassword] = useState(false);
 
-  // Lista de usuarios permitidos
-  const allowedUsers = ["usuario1@example.com", "usuario2@example.com", "usuario3@example.com"];
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  useEffect(() => {
+    // Revisar si venimos con token de magic link / reset password
+    const accessToken = searchParams.get("access_token");
+    const type = searchParams.get("type");
+
+    if (accessToken && type === "magiclink") {
+      setIsSettingPassword(true);
+      setMessage(
+        "Bienvenido! Ingresa una nueva contraseña para tu cuenta."
+      );
+    }
+  }, [searchParams]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setMessage("");
-    setLoading(true);
 
-    // Verificar si el usuario está permitido
-    if (!allowedUsers.includes(email)) {
-      setMessage("❌ Usuario no permitido");
-      setLoading(false);
-      return;
-    }
-
-    // Login con correo y contraseña en Supabase
-    const { data, error } = await supabase.auth.signInWithPassword({
+    // Login normal
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -35,37 +40,33 @@ export default function LoginPage() {
     if (error) {
       setMessage("❌ Error: " + error.message);
     } else {
-      setMessage("✅ Login exitoso");
-      router.push("/dashboard"); // redirige al dashboard
+      router.push("/dashboard");
     }
-
-    setLoading(false);
   };
 
-  // Manejo de invitación (magic link)
-  const handleInvite = async (e) => {
+  const handleSetPassword = async (e) => {
     e.preventDefault();
     setMessage("");
-    setLoading(true);
 
-    if (!allowedUsers.includes(email)) {
-      setMessage("❌ Usuario no permitido");
-      setLoading(false);
+    const accessToken = searchParams.get("access_token");
+    if (!accessToken) {
+      setMessage("❌ Token inválido");
       return;
     }
 
-    const { data, error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/login` },
+    const { error } = await supabase.auth.updateUser({
+      access_token: accessToken,
+      password: newPassword,
     });
 
     if (error) {
-      setMessage("❌ Error enviando invitación: " + error.message);
+      setMessage("❌ Error: " + error.message);
     } else {
-      setMessage(`✅ Link enviado a ${email}. Revisa tu correo.`);
+      setMessage("✅ Contraseña establecida correctamente!");
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 1500);
     }
-
-    setLoading(false);
   };
 
   return (
@@ -75,96 +76,97 @@ export default function LoginPage() {
         justifyContent: "center",
         alignItems: "center",
         minHeight: "100vh",
-        background: "linear-gradient(135deg, #4DA6FF, #9B59B6)",
+        background: "linear-gradient(135deg, #667eea, #764ba2)",
         fontFamily: "'Poppins', sans-serif",
         padding: "20px",
       }}
     >
-      <form
-        onSubmit={handleLogin}
+      <div
         style={{
           background: "#fff",
           padding: "30px",
           borderRadius: "16px",
-          boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
-          maxWidth: "400px",
           width: "100%",
+          maxWidth: "400px",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+          textAlign: "center",
         }}
       >
-        <h1 style={{ textAlign: "center", marginBottom: "20px", fontWeight: "600" }}>
-          Iniciar Sesión
+        <h1 style={{ marginBottom: "20px", fontSize: "1.8rem" }}>
+          {isSettingPassword ? "Establecer contraseña" : "Iniciar sesión"}
         </h1>
 
-        <input
-          type="email"
-          placeholder="Correo electrónico"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          style={{
-            padding: "12px",
-            borderRadius: "8px",
-            border: "1px solid #ccc",
-            fontSize: "1rem",
-          }}
-        />
-
-        <input
-          type="password"
-          placeholder="Contraseña"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          style={{
-            padding: "12px",
-            borderRadius: "8px",
-            border: "1px solid #ccc",
-            fontSize: "1rem",
-          }}
-        />
-
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            padding: "12px",
-            background: "#0070f3",
-            color: "#fff",
-            fontWeight: "600",
-            border: "none",
-            borderRadius: "10px",
-            cursor: "pointer",
-            fontSize: "1rem",
-          }}
-        >
-          {loading ? "Ingresando..." : "Ingresar"}
-        </button>
-
-        <button
-          onClick={handleInvite}
-          type="button"
-          disabled={loading}
-          style={{
-            padding: "12px",
-            background: "#6c63ff",
-            color: "#fff",
-            fontWeight: "600",
-            border: "none",
-            borderRadius: "10px",
-            cursor: "pointer",
-            fontSize: "1rem",
-          }}
-        >
-          {loading ? "Enviando..." : "Enviar Link de Invitación"}
-        </button>
-
         {message && (
-          <p style={{ marginTop: "10px", textAlign: "center", color: "#333" }}>{message}</p>
+          <p
+            style={{
+              marginBottom: "20px",
+              color: message.startsWith("❌") ? "red" : "green",
+            }}
+          >
+            {message}
+          </p>
         )}
-      </form>
+
+        {isSettingPassword ? (
+          <form onSubmit={handleSetPassword} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <input
+              type="password"
+              placeholder="Nueva contraseña"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ccc" }}
+              required
+            />
+            <button
+              type="submit"
+              style={{
+                padding: "12px",
+                background: "#0070f3",
+                color: "#fff",
+                border: "none",
+                borderRadius: "10px",
+                cursor: "pointer",
+                fontWeight: "600",
+              }}
+            >
+              Establecer contraseña
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <input
+              type="email"
+              placeholder="Correo"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ccc" }}
+              required
+            />
+            <input
+              type="password"
+              placeholder="Contraseña"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ccc" }}
+              required
+            />
+            <button
+              type="submit"
+              style={{
+                padding: "12px",
+                background: "#0070f3",
+                color: "#fff",
+                border: "none",
+                borderRadius: "10px",
+                cursor: "pointer",
+                fontWeight: "600",
+              }}
+            >
+              Iniciar sesión
+            </button>
+          </form>
+        )}
+      </div>
     </div>
   );
 }
