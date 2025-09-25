@@ -232,21 +232,52 @@ export default function DashboardPage() {
           }}
         />
 
-        {tipo === "texto" && (
-          <textarea
-            placeholder="Descripción"
-            value={descripcion}
-            onChange={(e) => setDescripcion(e.target.value)}
-            style={{
-              padding: "10px",
-              fontSize: "1rem",
-              borderRadius: "8px",
-              border: "1px solid #ccc",
-              minHeight: "100px",
-            }}
-            required
-          />
-        )}
+       {tipo === "texto" && (
+  <>
+    <textarea
+      placeholder="Descripción"
+      value={descripcion}
+      onChange={(e) => setDescripcion(e.target.value)}
+      style={{
+        padding: "10px",
+        fontSize: "1rem",
+        borderRadius: "8px",
+        border: "1px solid #ccc",
+        minHeight: "100px",
+      }}
+      required
+    />
+
+    {/* Toggle de sonido */}
+    <button
+      type="button"
+      onClick={() => {
+        const newState = !soundEnabled;
+        setSoundEnabled(newState);
+        localStorage.setItem("soundEnabled", newState);
+
+        if (newState) {
+          const preload = new Audio("/audio/alerta.ogg");
+          preload.volume = 0.5; // sonido más bajo en la precarga
+          preload.play().catch(() => {});
+          setAudio(preload);
+        }
+      }}
+      style={{
+        padding: "10px",
+        borderRadius: "8px",
+        background: soundEnabled ? "#22c55e" : "#f87171",
+        color: "#fff",
+        border: "none",
+        cursor: "pointer",
+        fontWeight: "600",
+        marginTop: "10px",
+      }}
+    >
+      {soundEnabled ? "Con sonido 🔊" : "Sin sonido 🔇"}
+    </button>
+  </>
+)}
 
         {tipo === "video" && (
           <input

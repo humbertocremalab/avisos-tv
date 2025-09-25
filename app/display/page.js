@@ -22,6 +22,7 @@ export default function DisplayPage() {
 
     if (enabled) {
       const newAudio = new Audio("/audio/alerta.ogg");
+      newAudio.preload = "auto"; // 🔥 precarga
       newAudio.volume = 1;
       setAudio(newAudio);
     }
@@ -85,6 +86,7 @@ export default function DisplayPage() {
     if (!shownIds.has(aviso.id)) {
       // Sonido solo si está activado
       if (soundEnabled && audio) {
+        audio.currentTime = 0; // 🔄 reinicia
         audio.play().catch((e) =>
           console.log("Error al reproducir audio:", e)
         );
@@ -154,7 +156,9 @@ export default function DisplayPage() {
         )}
 
         {aviso.tipo === "texto" && (
-          <p style={{ fontSize: "2rem", lineHeight: "1.5" }}>{aviso.descripcion}</p>
+          <p style={{ fontSize: "2rem", lineHeight: "1.5" }}>
+            {aviso.descripcion}
+          </p>
         )}
 
         {aviso.tipo === "video" && (
