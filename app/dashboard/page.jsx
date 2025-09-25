@@ -15,6 +15,31 @@ export default function DashboardPage() {
   const [avisos, setAvisos] = useState([]);
   const router = useRouter(); // Inicializar router
 
+  // --- NUEVO: Control de sonido ---
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [audio, setAudio] = useState(null);
+
+  useEffect(() => {
+    const enabled = localStorage.getItem("soundEnabled") === "true";
+    setSoundEnabled(enabled);
+    if (enabled) {
+      const newAudio = new Audio("/audio/alerta.ogg");
+      newAudio.volume = 1;
+      setAudio(newAudio);
+    }
+  }, []);
+
+  const toggleSound = () => {
+    const newState = !soundEnabled;
+    setSoundEnabled(newState);
+    localStorage.setItem("soundEnabled", newState);
+    if (newState && !audio) {
+      const newAudio = new Audio("/audio/alerta.ogg");
+      newAudio.volume = 1;
+      setAudio(newAudio);
+    }
+  };
+
   // --- Verificación de sesión al cargar ---
   useEffect(() => {
     const checkSession = async () => {
@@ -105,7 +130,7 @@ export default function DashboardPage() {
         fontFamily: "'Poppins', sans-serif",
         background: "#f4f6f8",
         minHeight: "100vh",
-        position: "relative", // Para posicionar el botón logout
+        position: "relative",
       }}
     >
       {/* Botón de Cerrar Sesión */}
@@ -125,6 +150,23 @@ export default function DashboardPage() {
         }}
       >
         Cerrar sesión
+      </button>
+
+      {/* NUEVO: Botón de sonido */}
+      <button
+        onClick={toggleSound}
+        style={{
+          padding: "8px 16px",
+          marginBottom: "20px",
+          borderRadius: "8px",
+          background: soundEnabled ? "#22c55e" : "#f87171",
+          color: "#fff",
+          border: "none",
+          cursor: "pointer",
+          fontWeight: "600",
+        }}
+      >
+        {soundEnabled ? "Sonido Activado" : "Activar Sonido"}
       </button>
 
       <h1

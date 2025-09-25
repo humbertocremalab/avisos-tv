@@ -8,9 +8,24 @@ import confetti from "canvas-confetti";
 export default function DisplayPage() {
   const [avisos, setAvisos] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [shownIds, setShownIds] = useState(new Set()); // 👈 para controlar qué avisos ya se mostraron
+  const [shownIds, setShownIds] = useState(new Set());
   const videoRef = useRef(null);
   const ROTATION_TIME = 7000;
+
+  // --- NUEVO: sonido ---
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [audio, setAudio] = useState(null);
+
+  useEffect(() => {
+    const enabled = localStorage.getItem("soundEnabled") === "true";
+    setSoundEnabled(enabled);
+
+    if (enabled) {
+      const newAudio = new Audio("/audio/alerta.ogg");
+      newAudio.volume = 1;
+      setAudio(newAudio);
+    }
+  }, []);
 
   const fetchAvisos = async () => {
     const { data, error } = await supabase
@@ -24,7 +39,6 @@ export default function DisplayPage() {
     }
   };
 
-  // Carga inicial + suscripción en tiempo real
   useEffect(() => {
     fetchAvisos();
 
@@ -40,7 +54,6 @@ export default function DisplayPage() {
     return () => supabase.removeChannel(channel);
   }, []);
 
-  // Rotación automática de avisos
   useEffect(() => {
     if (avisos.length === 0) return;
 
@@ -50,40 +63,42 @@ export default function DisplayPage() {
     if (aviso.tipo === "video") {
       const video = videoRef.current;
       if (video) {
-        const handleEnded = () => setCurrentIndex((prev) => (prev + 1) % avisos.length);
+        const handleEnded = () =>
+          setCurrentIndex((prev) => (prev + 1) % avisos.length);
         video.addEventListener("ended", handleEnded);
         return () => video.removeEventListener("ended", handleEnded);
       }
     } else {
-      interval = setInterval(() => setCurrentIndex((prev) => (prev + 1) % avisos.length), ROTATION_TIME);
+      interval = setInterval(
+        () => setCurrentIndex((prev) => (prev + 1) % avisos.length),
+        ROTATION_TIME
+      );
       return () => clearInterval(interval);
     }
   }, [avisos, currentIndex]);
 
-  // 🎉🔊 Confeti + Sonido SOLO en avisos nuevos
+  // Confeti + Sonido
   useEffect(() => {
     if (avisos.length === 0) return;
 
     const aviso = avisos[currentIndex];
     if (!shownIds.has(aviso.id)) {
-      // Reproducir sonido
-      const audio = new Audio("/audio/alerta.ogg"); // ruta relativa a la carpeta /public/audio/
-audio.volume = 1;
-audio.play().catch((e) => {
-  console.log("No se pudo reproducir el audio automáticamente:", e);
-});
+      // Sonido solo si está activado
+      if (soundEnabled && audio) {
+        audio.play().catch((e) =>
+          console.log("Error al reproducir audio:", e)
+        );
+      }
 
-      // Lanzar confeti
       confetti({
         particleCount: 120,
         spread: 80,
         origin: { y: 0.6 },
       });
 
-      // Marcar como mostrado
       setShownIds((prev) => new Set(prev).add(aviso.id));
     }
-  }, [avisos, currentIndex, shownIds]);
+  }, [avisos, currentIndex, shownIds, soundEnabled, audio]);
 
   if (avisos.length === 0)
     return (
@@ -131,12 +146,16 @@ audio.play().catch((e) => {
         }}
       >
         {aviso.titulo && (
-          <h2 style={{ fontSize: "2rem", marginBottom: "20px", color: "#4DA6FF" }}>
+          <h2
+            style={{ fontSize: "2rem", marginBottom: "20px", color: "#4DA6FF" }}
+          >
             {aviso.titulo}
           </h2>
         )}
 
-        {aviso.tipo === "texto" && <p style={{ fontSize: "2rem", lineHeight: "1.5" }}>{aviso.descripcion}</p>}
+        {aviso.tipo === "texto" && (
+          <p style={{ fontSize: "2rem", lineHeight: "1.5" }}>{aviso.descripcion}</p>
+        )}
 
         {aviso.tipo === "video" && (
           <video
