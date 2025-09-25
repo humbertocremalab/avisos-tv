@@ -38,7 +38,7 @@ export default function LoginPage() {
   return (
     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: "Poppins, sans-serif" }}>
       <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "10px", width: "300px" }}>
-        <h1>🔑 Login Dashboard</h1>
+        <h1>Iniciar Sesion</h1>
         <input
           type="email"
           placeholder="Email"
