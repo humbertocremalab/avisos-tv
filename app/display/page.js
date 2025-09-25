@@ -67,8 +67,11 @@ export default function DisplayPage() {
     const aviso = avisos[currentIndex];
     if (!shownIds.has(aviso.id)) {
       // Reproducir sonido
-      const audio = new Audio("/notify.mp3");
-      audio.play().catch(() => {});
+      const audio = new Audio("/audio/alerta.ogg"); // ruta relativa a la carpeta /public/audio/
+audio.volume = 1;
+audio.play().catch((e) => {
+  console.log("No se pudo reproducir el audio automáticamente:", e);
+});
 
       // Lanzar confeti
       confetti({
