@@ -8,7 +8,7 @@ export default function AvisoCard({ aviso }) {
   useEffect(() => {
     if (aviso.isNew && !shown) {
       // 🔊 sonido
-      const audio = new Audio("/notify.mp3");
+      const audio = new Audio("/audio/alerta.mp3");
       audio.play().catch(() => {});
 
       // 🎉 confeti
