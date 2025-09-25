@@ -1,16 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "../../supabaseClient";
+import Image from "next/image";
 
 export default function DashboardPage() {
-  const router = useRouter();
-
-  // ---- Estado de sesión ----
-  const [session, setSession] = useState(null);
-  const [loadingSession, setLoadingSession] = useState(true);
-
-  // ---- Estados de avisos ----
   const [tipo, setTipo] = useState("texto");
   const [titulo, setTitulo] = useState("");
   const [descripcion, setDescripcion] = useState("");
@@ -20,45 +13,16 @@ export default function DashboardPage() {
   const [message, setMessage] = useState("");
   const [avisos, setAvisos] = useState([]);
 
-  // ---- Check de sesión y redirección ----
   useEffect(() => {
-    const checkSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+    cargarAvisos();
 
-      if (!session) {
-        router.push("/login"); // Si no hay sesión, va a login
-      } else {
-        setSession(session);
-      }
-      setLoadingSession(false);
-    };
-
-    checkSession();
-
-    // Listener de cambios en sesión
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (!session) router.push("/login");
-        else setSession(session);
-      }
-    );
-
-    return () => listener.subscription.unsubscribe();
-  }, []);
-
-  // ---- Cargar avisos ----
-  useEffect(() => {
-    if (session) cargarAvisos();
-
-    // Tipografía Poppins
+    // Inyectar tipografía Poppins
     const link = document.createElement("link");
     link.href =
       "https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap";
     link.rel = "stylesheet";
     document.head.appendChild(link);
-  }, [session]);
+  }, []);
 
   const cargarAvisos = async () => {
     const { data, error } = await supabase
@@ -66,12 +30,15 @@ export default function DashboardPage() {
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (error) console.error("❌ Error cargando avisos:", error);
-    else setAvisos(data);
+    if (error) {
+      console.error("❌ Error cargando avisos:", error);
+    } else {
+      setAvisos(data);
+    }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
     setMessage("");
 
@@ -85,8 +52,10 @@ export default function DashboardPage() {
       },
     ]);
 
-    if (error) setMessage("❌ Error al guardar aviso: " + error.message);
-    else {
+    if (error) {
+      console.error(error);
+      setMessage("❌ Error al guardar aviso: " + error.message);
+    } else {
       setMessage("✅ Aviso agregado con éxito");
       setTitulo("");
       setDescripcion("");
@@ -100,14 +69,13 @@ export default function DashboardPage() {
 
   const borrarAviso = async (id) => {
     const { error } = await supabase.from("avisos").delete().eq("id", id);
-    if (error) console.error("❌ Error al borrar aviso:", error);
-    else cargarAvisos();
+    if (error) {
+      console.error("❌ Error al borrar aviso:", error);
+    } else {
+      cargarAvisos();
+    }
   };
 
-  // ---- Mostrar loading de sesión ----
-  if (loadingSession) return <p style={{ textAlign: "center" }}>Cargando...</p>;
-
-  // ---- Render Dashboard ----
   return (
     <div
       style={{
@@ -247,9 +215,11 @@ export default function DashboardPage() {
         </button>
       </form>
 
-      {message && <p style={{ marginTop: "20px", textAlign: "center" }}>{message}</p>}
+      {message && (
+        <p style={{ marginTop: "20px", textAlign: "center" }}>{message}</p>
+      )}
 
-      {/* Lista de avisos existentes */}
+      {/* Lista de avisos */}
       <h2
         style={{
           marginTop: "40px",
@@ -262,7 +232,7 @@ export default function DashboardPage() {
         Avisos existentes
       </h2>
       {avisos.length === 0 && (
-        <p style={{ textAlign: "center", color: "#000" }}>No hay avisos aún.</p>
+        <p style={{ textAlign: "center", color: "#000" }}>No hay avisos aún</p>
       )}
 
       <div style={{ maxWidth: "600px", margin: "20px auto" }}>
@@ -283,16 +253,25 @@ export default function DashboardPage() {
             }}
           >
             <div>
-              <strong style={{ fontSize: "1.1rem" }}>{aviso.titulo || "(sin título)"}</strong>{" "}
+              <strong style={{ fontSize: "1.1rem" }}>
+                {aviso.titulo || "(sin título)"}
+              </strong>{" "}
               <span style={{ fontSize: "0.9rem", color: "#242424ff" }}>
                 [{aviso.tipo}]
               </span>
               {aviso.tipo === "texto" && <p>{aviso.descripcion}</p>}
               {aviso.tipo === "video" && <p>{aviso.url}</p>}
-              {aviso.tipo === "imagen" && <p>{aviso.imagen_url}</p>}
+              {aviso.tipo === "imagen" && (
+                <Image
+                  src={aviso.imagen_url}
+                  alt="preview"
+                  width={600}
+                  height={400}
+                  style={{ borderRadius: "12px" }}
+                />
+              )}
             </div>
 
-            {/* Botón de eliminar debajo */}
             <button
               onClick={() => borrarAviso(aviso.id)}
               style={{
