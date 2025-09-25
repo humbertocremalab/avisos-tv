@@ -1,26 +1,33 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { supabase } from "../../supabaseClient";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
-  const [hasToken, setHasToken] = useState(false);
-  const searchParams = useSearchParams();
   const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState(""); // contraseña para usuarios existentes
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const token = searchParams.get("token"); // Captura el token si viene de la invitación
+  // Lista de usuarios permitidos
+  const allowedUsers = ["usuario1@example.com", "usuario2@example.com", "usuario3@example.com"];
 
-  useEffect(() => {
-    if (token) setHasToken(true); // Si hay token, mostramos formulario de establecer contraseña
-  }, [token]);
-
-  // 🔑 Función para iniciar sesión normal
   const handleLogin = async (e) => {
     e.preventDefault();
-    const { error } = await supabase.auth.signInWithPassword({
+    setMessage("");
+    setLoading(true);
+
+    // Verificar si el usuario está permitido
+    if (!allowedUsers.includes(email)) {
+      setMessage("❌ Usuario no permitido");
+      setLoading(false);
+      return;
+    }
+
+    // Login con correo y contraseña en Supabase
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -28,112 +35,136 @@ export default function LoginPage() {
     if (error) {
       setMessage("❌ Error: " + error.message);
     } else {
-      setMessage("✅ Inicio de sesión correcto");
-      router.push("/dashboard");
+      setMessage("✅ Login exitoso");
+      router.push("/dashboard"); // redirige al dashboard
     }
+
+    setLoading(false);
   };
 
-  // 🔒 Función para establecer contraseña desde invitación
-  const handleSetPassword = async (e) => {
+  // Manejo de invitación (magic link)
+  const handleInvite = async (e) => {
     e.preventDefault();
-    if (!token) {
-      setMessage("Token no encontrado en la URL");
+    setMessage("");
+    setLoading(true);
+
+    if (!allowedUsers.includes(email)) {
+      setMessage("❌ Usuario no permitido");
+      setLoading(false);
       return;
     }
 
-    const { error } = await supabase.auth.updateUser({
-      password: password,
-      access_token: token,
+    const { data, error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/login` },
     });
 
     if (error) {
-      setMessage("❌ Error: " + error.message);
+      setMessage("❌ Error enviando invitación: " + error.message);
     } else {
-      setMessage("✅ Contraseña establecida correctamente. Redirigiendo...");
-      setTimeout(() => router.push("/dashboard"), 1500);
+      setMessage(`✅ Link enviado a ${email}. Revisa tu correo.`);
     }
+
+    setLoading(false);
   };
 
   return (
     <div
       style={{
-        minHeight: "100vh",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        background: "linear-gradient(135deg, #4a00e0, #8e2de2)",
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #4DA6FF, #9B59B6)",
         fontFamily: "'Poppins', sans-serif",
         padding: "20px",
       }}
     >
-      <div
+      <form
+        onSubmit={handleLogin}
         style={{
           background: "#fff",
-          borderRadius: "16px",
           padding: "30px",
+          borderRadius: "16px",
+          boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px",
           maxWidth: "400px",
           width: "100%",
-          boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
-          textAlign: "center",
         }}
       >
-        <h2 style={{ marginBottom: "20px", fontWeight: "600", color: "#4a00e0" }}>
-          {hasToken ? "Establece tu contraseña" : "Inicia sesión"}
-        </h2>
+        <h1 style={{ textAlign: "center", marginBottom: "20px", fontWeight: "600" }}>
+          Iniciar Sesión
+        </h1>
 
-        <form
-          onSubmit={hasToken ? handleSetPassword : handleLogin}
-          style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+        <input
+          type="email"
+          placeholder="Correo electrónico"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          style={{
+            padding: "12px",
+            borderRadius: "8px",
+            border: "1px solid #ccc",
+            fontSize: "1rem",
+          }}
+        />
+
+        <input
+          type="password"
+          placeholder="Contraseña"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          style={{
+            padding: "12px",
+            borderRadius: "8px",
+            border: "1px solid #ccc",
+            fontSize: "1rem",
+          }}
+        />
+
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            padding: "12px",
+            background: "#0070f3",
+            color: "#fff",
+            fontWeight: "600",
+            border: "none",
+            borderRadius: "10px",
+            cursor: "pointer",
+            fontSize: "1rem",
+          }}
         >
-          {!hasToken && (
-            <input
-              type="email"
-              placeholder="Correo electrónico"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{
-                padding: "10px",
-                fontSize: "1rem",
-                borderRadius: "8px",
-                border: "1px solid #ccc",
-              }}
-            />
-          )}
+          {loading ? "Ingresando..." : "Ingresar"}
+        </button>
 
-          <input
-            type="password"
-            placeholder={hasToken ? "Nueva contraseña" : "Contraseña"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{
-              padding: "10px",
-              fontSize: "1rem",
-              borderRadius: "8px",
-              border: "1px solid #ccc",
-            }}
-          />
+        <button
+          onClick={handleInvite}
+          type="button"
+          disabled={loading}
+          style={{
+            padding: "12px",
+            background: "#6c63ff",
+            color: "#fff",
+            fontWeight: "600",
+            border: "none",
+            borderRadius: "10px",
+            cursor: "pointer",
+            fontSize: "1rem",
+          }}
+        >
+          {loading ? "Enviando..." : "Enviar Link de Invitación"}
+        </button>
 
-          <button
-            type="submit"
-            style={{
-              padding: "12px",
-              fontWeight: "600",
-              background: "#4a00e0",
-              color: "#fff",
-              border: "none",
-              borderRadius: "10px",
-              cursor: "pointer",
-              marginTop: "10px",
-            }}
-          >
-            {hasToken ? "Establecer contraseña" : "Iniciar sesión"}
-          </button>
-        </form>
-
-        {message && <p style={{ marginTop: "15px", color: "#333" }}>{message}</p>}
-      </div>
+        {message && (
+          <p style={{ marginTop: "10px", textAlign: "center", color: "#333" }}>{message}</p>
+        )}
+      </form>
     </div>
   );
 }
