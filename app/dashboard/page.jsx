@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "../../supabaseClient";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
@@ -14,7 +13,6 @@ export default function DashboardPage() {
   const [avisos, setAvisos] = useState([]);
   const router = useRouter();
 
-  // --- Verificación de sesión ---
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -49,7 +47,7 @@ export default function DashboardPage() {
       if ((tipo === "video" || tipo === "imagen") && file) {
         const fileExt = file.name.split(".").pop();
         const fileName = `${Date.now()}.${fileExt}`;
-        const folder = tipo === "video" ? "videos" : "imagenes"; // 👈 corregido
+        const folder = tipo === "video" ? "videos" : "imagens";
         const filePath = `${folder}/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
@@ -58,9 +56,7 @@ export default function DashboardPage() {
 
         if (uploadError) throw uploadError;
 
-        // Generar URL pública
-        const { data: publicData } = supabase
-          .storage
+        const { data: publicData } = supabase.storage
           .from("avisos-media")
           .getPublicUrl(filePath);
 
@@ -99,23 +95,76 @@ export default function DashboardPage() {
   };
 
   return (
-    <div style={{ padding: "20px", fontFamily: "'Poppins', sans-serif", background: "#f4f6f8", minHeight: "100vh", position: "relative" }}>
+    <div
+      style={{
+        padding: "20px",
+        fontFamily: "'Poppins', sans-serif",
+        background: "#f4f6f8",
+        minHeight: "100vh",
+        position: "relative",
+      }}
+    >
       <button
         onClick={handleLogout}
-        style={{ padding: "10px 16px", background: "red", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", position: "absolute", top: "20px", right: "20px", fontWeight: "600" }}
+        style={{
+          padding: "10px 16px",
+          background: "red",
+          color: "#fff",
+          border: "none",
+          borderRadius: "8px",
+          cursor: "pointer",
+          position: "absolute",
+          top: "20px",
+          right: "20px",
+          fontWeight: "600",
+        }}
       >
         Cerrar sesión
       </button>
 
-      <h1 style={{ fontSize: "2rem", marginBottom: "20px", textAlign: "center", fontWeight: "600", color: "#0044cc" }}>
+      <h1
+        style={{
+          fontSize: "2rem",
+          marginBottom: "20px",
+          textAlign: "center",
+          fontWeight: "600",
+          color: "#0044cc",
+        }}
+      >
         Dashboard de Avisos
       </h1>
 
       {/* Formulario */}
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px", maxWidth: "420px", margin: "0 auto", padding: "20px", border: "1px solid #e0e0e0", borderRadius: "16px", background: "#fff", color: "#000", boxShadow: "0 4px 8px rgba(0,0,0,0.05)" }}>
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+          maxWidth: "420px",
+          margin: "0 auto",
+          padding: "20px",
+          border: "1px solid #e0e0e0",
+          borderRadius: "16px",
+          background: "#fff",
+          color: "#000",
+          boxShadow: "0 4px 8px rgba(0,0,0,0.05)",
+        }}
+      >
         <label style={{ fontWeight: "500" }}>
           Tipo de aviso:
-          <select value={tipo} onChange={(e) => setTipo(e.target.value)} style={{ padding: "10px", fontSize: "1rem", borderRadius: "8px", border: "1px solid #ccc", width: "100%", marginTop: "5px" }}>
+          <select
+            value={tipo}
+            onChange={(e) => setTipo(e.target.value)}
+            style={{
+              padding: "10px",
+              fontSize: "1rem",
+              borderRadius: "8px",
+              border: "1px solid #ccc",
+              width: "100%",
+              marginTop: "5px",
+            }}
+          >
             <option value="texto">Texto</option>
             <option value="video">Video</option>
             <option value="imagen">Imagen</option>
@@ -127,7 +176,13 @@ export default function DashboardPage() {
           placeholder="Título (opcional)"
           value={titulo}
           onChange={(e) => setTitulo(e.target.value)}
-          style={{ padding: "10px", fontSize: "1rem", borderRadius: "8px", border: "1px solid #ccc", color: "#000" }}
+          style={{
+            padding: "10px",
+            fontSize: "1rem",
+            borderRadius: "8px",
+            border: "1px solid #ccc",
+            color: "#000",
+          }}
         />
 
         {tipo === "texto" && (
@@ -135,7 +190,13 @@ export default function DashboardPage() {
             placeholder="Descripción"
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
-            style={{ padding: "10px", fontSize: "1rem", borderRadius: "8px", border: "1px solid #ccc", minHeight: "100px" }}
+            style={{
+              padding: "10px",
+              fontSize: "1rem",
+              borderRadius: "8px",
+              border: "1px solid #ccc",
+              minHeight: "100px",
+            }}
             required
           />
         )}
@@ -150,7 +211,21 @@ export default function DashboardPage() {
           />
         )}
 
-        <button type="submit" disabled={loading} style={{ padding: "12px", background: "#0070f3", color: "white", fontSize: "1.1rem", fontWeight: "600", border: "none", borderRadius: "10px", cursor: "pointer", marginTop: "10px" }}>
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            padding: "12px",
+            background: "#0070f3",
+            color: "white",
+            fontSize: "1.1rem",
+            fontWeight: "600",
+            border: "none",
+            borderRadius: "10px",
+            cursor: "pointer",
+            marginTop: "10px",
+          }}
+        >
           {loading ? "Guardando..." : "Agregar Aviso"}
         </button>
       </form>
@@ -158,26 +233,60 @@ export default function DashboardPage() {
       {message && <p style={{ marginTop: "20px", textAlign: "center" }}>{message}</p>}
 
       {/* Lista de avisos */}
-      <h2 style={{ marginTop: "40px", textAlign: "center", fontWeight: "600", fontSize: "1.5rem", color: "#000" }}>Avisos existentes</h2>
+      <h2
+        style={{
+          marginTop: "40px",
+          textAlign: "center",
+          fontWeight: "600",
+          fontSize: "1.5rem",
+          color: "#000",
+        }}
+      >
+        Avisos existentes
+      </h2>
       <div style={{ maxWidth: "600px", margin: "20px auto" }}>
         {avisos.map((aviso) => (
-          <div key={aviso.id} style={{ border: "1px solid #e0e0e0", borderRadius: "12px", padding: "16px", marginBottom: "16px", background: "#fff", color: "#000", boxShadow: "0 4px 8px rgba(0,0,0,0.05)" }}>
+          <div
+            key={aviso.id}
+            style={{
+              border: "1px solid #e0e0e0",
+              borderRadius: "12px",
+              padding: "16px",
+              marginBottom: "16px",
+              background: "#fff",
+              color: "#000",
+              boxShadow: "0 4px 8px rgba(0,0,0,0.05)",
+            }}
+          >
             <div>
-              <strong style={{ fontSize: "1.1rem" }}>{aviso.titulo || "(sin título)"}</strong>{" "}
-              <span style={{ fontSize: "0.9rem", color: "#555" }}>[{aviso.tipo}]</span>
+              <strong style={{ fontSize: "1.1rem" }}>
+                {aviso.titulo || "(sin título)"}
+              </strong>{" "}
+              <span style={{ fontSize: "0.9rem", color: "#555" }}>
+                [{aviso.tipo}]
+              </span>
               {aviso.tipo === "texto" && <p>{aviso.descripcion}</p>}
               {aviso.tipo === "video" && <p>🎬 Video subido</p>}
               {aviso.tipo === "imagen" && (
-                <Image
+                <img
                   src={aviso.imagen_url}
                   alt="preview"
-                  width={600}
-                  height={400}
-                  style={{ borderRadius: "12px" }}
+                  style={{ borderRadius: "12px", maxWidth: "100%" }}
                 />
               )}
             </div>
-            <button onClick={() => borrarAviso(aviso.id)} style={{ background: "red", color: "white", border: "none", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", marginTop: "10px" }}>
+            <button
+              onClick={() => borrarAviso(aviso.id)}
+              style={{
+                background: "red",
+                color: "white",
+                border: "none",
+                padding: "8px 12px",
+                borderRadius: "8px",
+                cursor: "pointer",
+                marginTop: "10px",
+              }}
+            >
               Eliminar
             </button>
           </div>
