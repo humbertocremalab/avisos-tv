@@ -153,27 +153,6 @@ export default function DisplayPage() {
         overflow: "hidden",
       }}
     >
-      {/* 🔊 Botón de sonido */}
-      <button
-        onClick={toggleSound}
-        style={{
-          position: "absolute",
-          top: "20px",
-          right: "20px",
-          padding: "10px 16px",
-          background: soundEnabled ? "#22c55e" : "#ef4444",
-          border: "none",
-          borderRadius: "8px",
-          color: "white",
-          fontWeight: "bold",
-          cursor: "pointer",
-          boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
-          zIndex: 10,
-        }}
-      >
-        {soundEnabled ? "🔊 Sonido ON" : "🔇 Sonido OFF"}
-      </button>
-
       {/* 🔥 Contenedor para Fireworks */}
       <div
         ref={fireworksRef}
@@ -198,8 +177,30 @@ export default function DisplayPage() {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
+          position: "relative",
         }}
       >
+        {/* 🔊 Botón de sonido rotado */}
+        <button
+          onClick={toggleSound}
+          style={{
+            position: "absolute",
+            top: "20px",
+            right: "20px",
+            padding: "10px 16px",
+            background: soundEnabled ? "#22c55e" : "#ef4444",
+            border: "none",
+            borderRadius: "8px",
+            color: "white",
+            fontWeight: "bold",
+            cursor: "pointer",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+            zIndex: 10,
+          }}
+        >
+          {soundEnabled ? "🔊 Sonido ON" : "🔇 Sonido OFF"}
+        </button>
+
         <div
           key={aviso.id}
           style={{
