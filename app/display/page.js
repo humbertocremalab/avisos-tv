@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../../supabaseClient";
-import Image from "next/image";
 import confetti from "canvas-confetti";
 
 export default function DisplayPage() {
@@ -53,7 +52,7 @@ export default function DisplayPage() {
   useEffect(() => {
     fetchAvisos();
 
-    // ✅ Canal realtime que reacciona en INSERT/DELETE/UPDATE
+    // 🔄 Escucha realtime y actualiza la lista
     const channel = supabase
       .channel("avisos-changes")
       .on(
@@ -62,7 +61,7 @@ export default function DisplayPage() {
         (payload) => {
           if (payload.eventType === "INSERT") {
             setAvisos((prev) => [payload.new, ...prev]);
-            setCurrentIndex(0); // 👉 que arranque en el nuevo
+            setCurrentIndex(0);
           } else if (payload.eventType === "DELETE") {
             setAvisos((prev) => prev.filter((a) => a.id !== payload.old.id));
             if (currentIndex >= avisos.length - 1) setCurrentIndex(0);
@@ -75,7 +74,9 @@ export default function DisplayPage() {
       )
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Rotación automática
@@ -83,7 +84,6 @@ export default function DisplayPage() {
     if (avisos.length === 0) return;
     let interval;
     const aviso = avisos[currentIndex];
-
     if (aviso.tipo === "video") {
       const video = videoRef.current;
       if (video) {
@@ -101,7 +101,7 @@ export default function DisplayPage() {
     }
   }, [avisos, currentIndex]);
 
-  // Confeti + sonido SOLO en avisos tipo texto
+  // 🎉 Confeti + sonido SOLO en avisos de texto
   useEffect(() => {
     if (avisos.length === 0) return;
     const aviso = avisos[currentIndex];
@@ -225,11 +225,9 @@ export default function DisplayPage() {
           )}
 
           {aviso.tipo === "imagen" && (
-            <Image
+            <img
               src={aviso.imagen_url}
               alt="aviso"
-              width={800}
-              height={450}
               style={{ borderRadius: "12px", width: "100%", height: "auto" }}
             />
           )}
