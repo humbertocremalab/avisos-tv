@@ -7,12 +7,13 @@ export default function DisplayPage() {
   const [avisos, setAvisos] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shownIds, setShownIds] = useState(new Set());
-  const videoRef = useRef(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const ROTATION_TIME = 20000;
 
   const [soundEnabled, setSoundEnabled] = useState(false);
-  const [audio, setAudio] = useState(null);
+  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
 
+  // Carga estado de sonido
   useEffect(() => {
     const enabled = localStorage.getItem("soundEnabled") === "true";
     setSoundEnabled(enabled);
@@ -37,6 +38,7 @@ export default function DisplayPage() {
     }
   };
 
+  // Fetch inicial de avisos
   const fetchAvisos = async () => {
     const { data, error } = await supabase
       .from("avisos")
@@ -49,30 +51,45 @@ export default function DisplayPage() {
     }
   };
 
- useEffect(() => {
-  fetchAvisos(); // carga inicial
+  // Realtime + fetch inicial
+  useEffect(() => {
+    fetchAvisos();
 
-  const channel = supabase
-    .channel("avisos-changes")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "avisos" },
-      (payload) => {
-        console.log("Evento realtime:", payload);
-        // fuerza recarga completa para evitar que no se refleje
-        fetchAvisos();
-      }
-    )
-    .subscribe();
+    const channel = supabase
+      .channel("avisos-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "avisos" },
+        async (payload) => {
+          console.log("Evento Realtime:", payload);
 
-  return () => supabase.removeChannel(channel);
-}, []);
+          // Refetch completo para asegurar actualización
+          await fetchAvisos();
+
+          // Si es un texto nuevo, reproducir confeti y sonido
+          if (payload.eventType === "INSERT" && payload.new.tipo === "texto") {
+            if (soundEnabled && audio) {
+              audio.currentTime = 0;
+              audio.play().catch((e) => console.log("Error al reproducir audio", e));
+            }
+            confetti({ particleCount: 150, spread: 100, origin: { x: 0.5, y: 0.6 } });
+          }
+
+          // Reiniciar carrusel al agregar nuevo aviso
+          if (payload.eventType === "INSERT") setCurrentIndex(0);
+        }
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, [soundEnabled, audio]);
 
   // Rotación automática
   useEffect(() => {
     if (avisos.length === 0) return;
-    let interval;
+    let interval: NodeJS.Timeout;
     const aviso = avisos[currentIndex];
+
     if (aviso.tipo === "video") {
       const video = videoRef.current;
       if (video) {
