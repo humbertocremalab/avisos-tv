@@ -3,21 +3,19 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../../supabaseClient";
 import Image from "next/image";
-import Confetti from "react-confetti";
+import { Fireworks } from "fireworks-js";
 
 export default function DisplayPage() {
   const [avisos, setAvisos] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shownIds, setShownIds] = useState(new Set());
   const videoRef = useRef(null);
-  const ROTATION_TIME = 20000;
+  const fireworksRef = useRef(null);
+  const ROTATION_TIME = 3000;
 
   // --- Sonido ---
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [audio, setAudio] = useState(null);
-
-  // --- Confetti ---
-  const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     const enabled = localStorage.getItem("soundEnabled") === "true";
@@ -88,7 +86,7 @@ export default function DisplayPage() {
     }
   }, [avisos, currentIndex]);
 
-  // Confetti + Sonido al mostrar un aviso
+  // Fireworks + Sonido
   useEffect(() => {
     if (avisos.length === 0) return;
     const aviso = avisos[currentIndex];
@@ -98,9 +96,26 @@ export default function DisplayPage() {
         audio.currentTime = 0;
         audio.play().catch((e) => console.log("Error al reproducir audio:", e));
       }
-      // Mostrar confetti
-      setShowConfetti(true);
-setTimeout(() => setShowConfetti(false), ROTATION_TIME - 500); // termina un poco antes de cambiar
+      // Fireworks
+      if (fireworksRef.current) {
+        const fireworks = new Fireworks(fireworksRef.current, {
+          rocketsPoint: 50,
+          speed: 3,
+          acceleration: 1.05,
+          friction: 0.98,
+          gravity: 1.5,
+          particles: 100,
+          trace: 3,
+          explosion: 5,
+          intensity: 30,
+          brightness: { min: 50, max: 80 },
+          decay: 0.015,
+          delay: { min: 0, max: 0 },
+        });
+        fireworks.start();
+        setTimeout(() => fireworks.stop(), 1500); // dura 1.5s
+      }
+      setShownIds((prev) => new Set(prev).add(aviso.id));
     }
   }, [avisos, currentIndex, shownIds, soundEnabled, audio]);
 
@@ -138,29 +153,19 @@ setTimeout(() => setShowConfetti(false), ROTATION_TIME - 500); // termina un poc
         overflow: "hidden",
       }}
     >
-      {/* Confetti dentro del contenedor rotado */}
-     {showConfetti && (
-  <div
-    style={{
-      position: "absolute",
-      width: "100vh",  // intercambiado por la rotación
-      height: "100vw",
-      top: 0,
-      left: 0,
-      transform: "rotate(-90deg)",
-      transformOrigin: "center center",
-      pointerEvents: "none",
-      zIndex: 5,
-    }}
-  >
-    <Confetti
-      width={window.innerHeight}
-      height={window.innerWidth}
-      numberOfPieces={200}
-      recycle={false}
-    />
-  </div>
-)}
+      {/* 🔥 Contenedor para Fireworks */}
+      <div
+        ref={fireworksRef}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          pointerEvents: "none",
+          zIndex: 5,
+        }}
+      />
 
       {/* Contenedor rotado */}
       <div
@@ -175,7 +180,7 @@ setTimeout(() => setShowConfetti(false), ROTATION_TIME - 500); // termina un poc
           position: "relative",
         }}
       >
-        {/* 🔊 Botón de sonido */}
+        {/* 🔊 Botón de sonido rotado */}
         <button
           onClick={toggleSound}
           style={{
@@ -196,7 +201,6 @@ setTimeout(() => setShowConfetti(false), ROTATION_TIME - 500); // termina un poc
           {soundEnabled ? "🔊 Sonido ON" : "🔇 Sonido OFF"}
         </button>
 
-        {/* Contenido del aviso */}
         <div
           key={aviso.id}
           style={{
