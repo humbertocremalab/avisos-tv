@@ -92,7 +92,7 @@ export default function DisplayPage() {
   return (
     <div
       style={{
-        transform: "rotate(-90deg)", // 👈 rotación al lado izquierdo
+        transform: "rotate(90deg)", // 👈 rotación al lado izquierdo
         transformOrigin: "center",
         width: "100vh",
         height: "100vw",
