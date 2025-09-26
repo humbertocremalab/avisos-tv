@@ -21,7 +21,6 @@ export default function DashboardPage() {
       if (!session) router.push("/login");
     };
     checkSession();
-
     cargarAvisos();
   }, []);
 
@@ -50,7 +49,7 @@ export default function DashboardPage() {
       if ((tipo === "video" || tipo === "imagen") && file) {
         const fileExt = file.name.split(".").pop();
         const fileName = `${Date.now()}.${fileExt}`;
-        const folder = tipo === "video" ? "videos" : "imagens";
+        const folder = tipo === "video" ? "videos" : "imagenes"; // 👈 corregido
         const filePath = `${folder}/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
@@ -59,25 +58,14 @@ export default function DashboardPage() {
 
         if (uploadError) throw uploadError;
 
-        const { data: publicUrl } = supabase.storage
+        // Generar URL pública
+        const { data: publicData } = supabase
+          .storage
           .from("avisos-media")
           .getPublicUrl(filePath);
 
-        if (tipo === "video") {
-  const { data: publicData } = supabase
-    .storage
-    .from("avisos-media")
-    .getPublicUrl(filePath);
-  url = publicData.publicUrl;
-}
-
-if (tipo === "imagen") {
-  const { data: publicData } = supabase
-    .storage
-    .from("avisos-media")
-    .getPublicUrl(filePath);
-  imagen_url = publicData.publicUrl;
-}
+        if (tipo === "video") url = publicData.publicUrl;
+        if (tipo === "imagen") imagen_url = publicData.publicUrl;
       }
 
       const { error } = await supabase.from("avisos").insert([

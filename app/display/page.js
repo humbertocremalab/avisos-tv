@@ -128,7 +128,15 @@ export default function DisplayPage() {
 
           {aviso.tipo === "video" && <video ref={videoRef} src={aviso.url} autoPlay muted controls={false} style={{ width: "100%", borderRadius: "12px" }} />}
 
-          {aviso.tipo === "imagen" && <Image src={aviso.imagen_url} alt="aviso" width={800} height={450} style={{ borderRadius: "12px", width: "100%", height: "auto" }} />}
+          {aviso.tipo === "imagen" && (
+  <Image
+    src={aviso.imagen_url}
+    alt="aviso"
+    width={800}
+    height={450}
+    style={{ borderRadius: "12px", width: "100%", height: "auto" }}
+  />
+)}
         </div>
       </div>
     </div>
