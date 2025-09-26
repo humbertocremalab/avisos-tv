@@ -59,7 +59,7 @@ export default function DashboardPage() {
         const filePath = `${tipo}s/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
-          .from("avisos") // 👈 nombre de tu bucket
+          .from("avisos-media") // 👈 nombre de tu bucket
           .upload(filePath, file);
 
         if (uploadError) throw uploadError;
