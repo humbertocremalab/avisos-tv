@@ -139,12 +139,20 @@ export default function DisplayPage() {
         background: "linear-gradient(135deg, #4f46e5, #9333ea)",
         color: "white",
         minHeight: "100vh",
+        minWidth: "100vw",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
         padding: "40px",
         fontFamily: "'Poppins', sans-serif",
         position: "relative",
+
+        // 🔄 Rotación completa
+        transform: "rotate(90deg)",
+        transformOrigin: "center center",
+        width: "100vh",
+        height: "100vw",
+        overflow: "hidden",
       }}
     >
       {/* 🔊 Botón de sonido */}
@@ -162,6 +170,7 @@ export default function DisplayPage() {
           fontWeight: "bold",
           cursor: "pointer",
           boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+          zIndex: 10,
         }}
       >
         {soundEnabled ? "🔊 Sonido ON" : "🔇 Sonido OFF"}
