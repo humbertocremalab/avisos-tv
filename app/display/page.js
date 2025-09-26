@@ -49,46 +49,24 @@ export default function DisplayPage() {
     }
   };
 
-  useEffect(() => {
-    fetchAvisos();
+ useEffect(() => {
+  fetchAvisos(); // carga inicial
 
-    // 🔄 Escucha realtime y actualiza la lista
-    const channel = supabase
-      .channel("avisos-changes")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "avisos" },
-        (payload) => {
-          console.log("Nuevo aviso detectado:", payload.new);
-          setAvisos((prev) => [payload.new, ...prev]);
-          setCurrentIndex(0);
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: "avisos" },
-        (payload) => {
-          console.log("Aviso eliminado:", payload.old);
-          setAvisos((prev) => prev.filter((a) => a.id !== payload.old.id));
-          if (currentIndex >= avisos.length - 1) setCurrentIndex(0);
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "avisos" },
-        (payload) => {
-          console.log("Aviso actualizado:", payload.new);
-          setAvisos((prev) =>
-            prev.map((a) => (a.id === payload.new.id ? payload.new : a))
-          );
-        }
-      )
-      .subscribe();
+  const channel = supabase
+    .channel("avisos-changes")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "avisos" },
+      (payload) => {
+        console.log("Evento realtime:", payload);
+        // fuerza recarga completa para evitar que no se refleje
+        fetchAvisos();
+      }
+    )
+    .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  return () => supabase.removeChannel(channel);
+}, []);
 
   // Rotación automática
   useEffect(() => {
