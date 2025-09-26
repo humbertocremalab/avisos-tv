@@ -45,19 +45,10 @@ export default function DisplayPage() {
       .order("created_at", { ascending: false });
 
     if (!error) {
+      // Public URLs
       const avisosConUrl = data.map((aviso) => {
-        if (aviso.tipo === "imagen" && aviso.imagen_url) {
-          const { data: publicUrl } = supabase.storage
-            .from("avisos-media")
-            .getPublicUrl(aviso.imagen_url);
-          return { ...aviso, imagen_url: publicUrl.publicUrl };
-        }
-        if (aviso.tipo === "video" && aviso.url) {
-          const { data: publicUrl } = supabase.storage
-            .from("avisos-media")
-            .getPublicUrl(aviso.url);
-          return { ...aviso, url: publicUrl.publicUrl };
-        }
+        if (aviso.tipo === "imagen" && aviso.imagen_url) return aviso;
+        if (aviso.tipo === "video" && aviso.url) return aviso;
         return aviso;
       });
       setAvisos(avisosConUrl);
@@ -69,11 +60,16 @@ export default function DisplayPage() {
     fetchAvisos();
     const channel = supabase
       .channel("avisos-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "avisos" }, () => fetchAvisos())
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "avisos" },
+        () => fetchAvisos()
+      )
       .subscribe();
     return () => supabase.removeChannel(channel);
   }, []);
 
+  // Rotación automática
   useEffect(() => {
     if (avisos.length === 0) return;
     let interval;
@@ -81,23 +77,28 @@ export default function DisplayPage() {
     if (aviso.tipo === "video") {
       const video = videoRef.current;
       if (video) {
-        const handleEnded = () => setCurrentIndex((prev) => (prev + 1) % avisos.length);
+        const handleEnded = () =>
+          setCurrentIndex((prev) => (prev + 1) % avisos.length);
         video.addEventListener("ended", handleEnded);
         return () => video.removeEventListener("ended", handleEnded);
       }
     } else {
-      interval = setInterval(() => setCurrentIndex((prev) => (prev + 1) % avisos.length), ROTATION_TIME);
+      interval = setInterval(
+        () => setCurrentIndex((prev) => (prev + 1) % avisos.length),
+        ROTATION_TIME
+      );
       return () => clearInterval(interval);
     }
   }, [avisos, currentIndex]);
 
+  // Confeti + sonido al mostrar nuevo aviso
   useEffect(() => {
     if (avisos.length === 0) return;
     const aviso = avisos[currentIndex];
     if (!shownIds.has(aviso.id)) {
       if (soundEnabled && audio) {
         audio.currentTime = 0;
-        audio.play().catch((e) => console.log("Error al reproducir audio:", e));
+        audio.play().catch((e) => console.log(e));
       }
       confetti({ particleCount: 150, spread: 100, origin: { x: 0.5, y: 0.6 } });
       setShownIds((prev) => new Set(prev).add(aviso.id));
@@ -105,7 +106,11 @@ export default function DisplayPage() {
   }, [avisos, currentIndex, shownIds, soundEnabled, audio]);
 
   if (avisos.length === 0)
-    return <div style={{ background: "linear-gradient(135deg, #4f46e5, #9333ea)", color: "white", minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", fontSize: "2rem" }}>📺 No hay avisos por mostrar</div>;
+    return (
+      <div style={{ background: "linear-gradient(135deg, #4f46e5, #9333ea)", color: "white", minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", fontSize: "2rem" }}>
+        📺 No hay avisos por mostrar
+      </div>
+    );
 
   const aviso = avisos[currentIndex];
 
@@ -118,8 +123,11 @@ export default function DisplayPage() {
 
         <div key={aviso.id} style={{ background: "#222", borderRadius: "16px", padding: "30px", textAlign: "center", width: "80%", maxWidth: "900px", boxShadow: "0px 0px 30px rgba(0,0,0,0.6)", transition: "all 0.5s ease-in-out", zIndex: 10 }}>
           {aviso.titulo && <h2 style={{ fontSize: "2rem", marginBottom: "20px", color: "#4DA6FF" }}>{aviso.titulo}</h2>}
+
           {aviso.tipo === "texto" && <p style={{ fontSize: "2rem", lineHeight: "1.5" }}>{aviso.descripcion}</p>}
-          {aviso.tipo === "video" && <video ref={videoRef} src={aviso.url} autoPlay muted controls style={{ width: "100%", borderRadius: "12px" }} />}
+
+          {aviso.tipo === "video" && <video ref={videoRef} src={aviso.url} autoPlay muted controls={false} style={{ width: "100%", borderRadius: "12px" }} />}
+
           {aviso.tipo === "imagen" && <Image src={aviso.imagen_url} alt="aviso" width={800} height={450} style={{ borderRadius: "12px", width: "100%", height: "auto" }} />}
         </div>
       </div>
