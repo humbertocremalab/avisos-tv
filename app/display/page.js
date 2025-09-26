@@ -12,7 +12,7 @@ export default function DisplayPage() {
   const videoRef = useRef(null);
   const ROTATION_TIME = 3000;
 
-  // --- NUEVO: sonido ---
+  // --- Sonido ---
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [audio, setAudio] = useState(null);
 
@@ -138,91 +138,97 @@ export default function DisplayPage() {
       style={{
         background: "linear-gradient(135deg, #4f46e5, #9333ea)",
         color: "white",
-        minHeight: "100vh",
-        minWidth: "100vw",
+        width: "100vw",
+        height: "100vh",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        padding: "40px",
         fontFamily: "'Poppins', sans-serif",
         position: "relative",
-
-        // 🔄 Rotación completa
-        transform: "rotate(90deg)",
-        transformOrigin: "center center",
-        width: "100vh",
-        height: "100vw",
         overflow: "hidden",
       }}
     >
-      {/* 🔊 Botón de sonido */}
-      <button
-        onClick={toggleSound}
-        style={{
-          position: "absolute",
-          top: "20px",
-          right: "20px",
-          padding: "10px 16px",
-          background: soundEnabled ? "#22c55e" : "#ef4444",
-          border: "none",
-          borderRadius: "8px",
-          color: "white",
-          fontWeight: "bold",
-          cursor: "pointer",
-          boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
-          zIndex: 10,
-        }}
-      >
-        {soundEnabled ? "🔊 Sonido ON" : "🔇 Sonido OFF"}
-      </button>
-
+      {/* Contenedor rotado y escalado */}
       <div
-        key={aviso.id}
         style={{
-          background: "#222",
-          borderRadius: "16px",
-          padding: "30px",
-          textAlign: "center",
-          width: "80%",
-          maxWidth: "900px",
-          boxShadow: "0px 0px 30px rgba(0,0,0,0.6)",
-          transition: "all 0.5s ease-in-out",
+          transform: "rotate(-90deg)",
+          transformOrigin: "center center",
+          width: "100vh",
+          height: "100vw",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
         }}
       >
-        {aviso.titulo && (
-          <h2
-            style={{ fontSize: "2rem", marginBottom: "20px", color: "#4DA6FF" }}
-          >
-            {aviso.titulo}
-          </h2>
-        )}
+        {/* 🔊 Botón de sonido */}
+        <button
+          onClick={toggleSound}
+          style={{
+            position: "absolute",
+            top: "20px",
+            right: "20px",
+            padding: "10px 16px",
+            background: soundEnabled ? "#22c55e" : "#ef4444",
+            border: "none",
+            borderRadius: "8px",
+            color: "white",
+            fontWeight: "bold",
+            cursor: "pointer",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+            zIndex: 10,
+          }}
+        >
+          {soundEnabled ? "🔊 Sonido ON" : "🔇 Sonido OFF"}
+        </button>
 
-        {aviso.tipo === "texto" && (
-          <p style={{ fontSize: "2rem", lineHeight: "1.5" }}>
-            {aviso.descripcion}
-          </p>
-        )}
+        <div
+          key={aviso.id}
+          style={{
+            background: "#222",
+            borderRadius: "16px",
+            padding: "30px",
+            textAlign: "center",
+            width: "80%",
+            maxWidth: "900px",
+            boxShadow: "0px 0px 30px rgba(0,0,0,0.6)",
+            transition: "all 0.5s ease-in-out",
+          }}
+        >
+          {aviso.titulo && (
+            <h2
+              style={{ fontSize: "2rem", marginBottom: "20px", color: "#4DA6FF" }}
+            >
+              {aviso.titulo}
+            </h2>
+          )}
 
-        {aviso.tipo === "video" && (
-          <video
-            ref={videoRef}
-            src={aviso.url}
-            autoPlay
-            muted
-            controls={false}
-            style={{ width: "100%", borderRadius: "12px" }}
-          />
-        )}
+          {aviso.tipo === "texto" && (
+            <p style={{ fontSize: "2rem", lineHeight: "1.5" }}>
+              {aviso.descripcion}
+            </p>
+          )}
 
-        {aviso.tipo === "imagen" && (
-          <Image
-            src={aviso.imagen_url}
-            alt="aviso"
-            width={800}
-            height={450}
-            style={{ borderRadius: "12px", width: "100%", height: "auto" }}
-          />
-        )}
+          {aviso.tipo === "video" && (
+            <video
+              ref={videoRef}
+              src={aviso.url}
+              autoPlay
+              muted
+              controls={false}
+              style={{ width: "100%", borderRadius: "12px" }}
+            />
+          )}
+
+          {aviso.tipo === "imagen" && (
+            <Image
+              src={aviso.imagen_url}
+              alt="aviso"
+              width={800}
+              height={450}
+              style={{ borderRadius: "12px", width: "100%", height: "auto" }}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
