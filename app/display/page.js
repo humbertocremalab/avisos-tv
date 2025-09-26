@@ -3,13 +3,14 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../../supabaseClient";
 import Image from "next/image";
-import confetti from "canvas-confetti";
+import { Fireworks } from "fireworks-js";
 
 export default function DisplayPage() {
   const [avisos, setAvisos] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shownIds, setShownIds] = useState(new Set());
   const videoRef = useRef(null);
+  const fireworksRef = useRef(null);
   const ROTATION_TIME = 3000;
 
   // --- Sonido ---
@@ -91,24 +92,37 @@ export default function DisplayPage() {
     }
   }, [avisos, currentIndex]);
 
-  // Confeti + Sonido
+  // 🔥 Fireworks + Sonido
   useEffect(() => {
     if (avisos.length === 0) return;
 
     const aviso = avisos[currentIndex];
     if (!shownIds.has(aviso.id)) {
+      // Sonido
       if (soundEnabled && audio) {
         audio.currentTime = 0;
-        audio.play().catch((e) =>
-          console.log("Error al reproducir audio:", e)
-        );
+        audio.play().catch((e) => console.log("Error al reproducir audio:", e));
       }
 
-      confetti({
-        particleCount: 120,
-        spread: 80,
-        origin: { y: 0.6 },
-      });
+      // Fireworks
+      if (fireworksRef.current) {
+        const fireworks = new Fireworks(fireworksRef.current, {
+          rocketsPoint: 50,
+          speed: 3,
+          acceleration: 1.05,
+          friction: 0.98,
+          gravity: 1.5,
+          particles: 100,
+          trace: 3,
+          explosion: 5,
+          intensity: 30,
+          brightness: { min: 50, max: 80 },
+          decay: 0.015,
+          delay: { min: 0, max: 0 },
+        });
+        fireworks.start();
+        setTimeout(() => fireworks.stop(), 1500); // Duración de la animación
+      }
 
       setShownIds((prev) => new Set(prev).add(aviso.id));
     }
@@ -138,97 +152,99 @@ export default function DisplayPage() {
       style={{
         background: "linear-gradient(135deg, #4f46e5, #9333ea)",
         color: "white",
-        width: "100vw",
-        height: "100vh",
+        minHeight: "100vh",
+        minWidth: "100vw",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
+        padding: "40px",
         fontFamily: "'Poppins', sans-serif",
         position: "relative",
-        overflow: "hidden",
       }}
     >
-      {/* Contenedor rotado y escalado */}
-      <div
+      {/* 🔊 Botón de sonido */}
+      <button
+        onClick={toggleSound}
         style={{
-          transform: "rotate(-90deg)",
-          transformOrigin: "center center",
-          width: "100vh",
-          height: "100vw",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
+          position: "absolute",
+          top: "20px",
+          right: "20px",
+          padding: "10px 16px",
+          background: soundEnabled ? "#22c55e" : "#ef4444",
+          border: "none",
+          borderRadius: "8px",
+          color: "white",
+          fontWeight: "bold",
+          cursor: "pointer",
+          boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+          zIndex: 10,
         }}
       >
-        {/* 🔊 Botón de sonido */}
-        <button
-          onClick={toggleSound}
-          style={{
-            position: "absolute",
-            top: "20px",
-            right: "20px",
-            padding: "10px 16px",
-            background: soundEnabled ? "#22c55e" : "#ef4444",
-            border: "none",
-            borderRadius: "8px",
-            color: "white",
-            fontWeight: "bold",
-            cursor: "pointer",
-            boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
-            zIndex: 10,
-          }}
-        >
-          {soundEnabled ? "🔊 Sonido ON" : "🔇 Sonido OFF"}
-        </button>
+        {soundEnabled ? "🔊 Sonido ON" : "🔇 Sonido OFF"}
+      </button>
 
-        <div
-          key={aviso.id}
-          style={{
-            background: "#222",
-            borderRadius: "16px",
-            padding: "30px",
-            textAlign: "center",
-            width: "80%",
-            maxWidth: "900px",
-            boxShadow: "0px 0px 30px rgba(0,0,0,0.6)",
-            transition: "all 0.5s ease-in-out",
-          }}
-        >
-          {aviso.titulo && (
-            <h2
-              style={{ fontSize: "2rem", marginBottom: "20px", color: "#4DA6FF" }}
-            >
-              {aviso.titulo}
-            </h2>
-          )}
+      {/* 🔥 Contenedor para Fireworks */}
+      <div
+        ref={fireworksRef}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          pointerEvents: "none",
+          zIndex: 5,
+        }}
+      />
 
-          {aviso.tipo === "texto" && (
-            <p style={{ fontSize: "2rem", lineHeight: "1.5" }}>
-              {aviso.descripcion}
-            </p>
-          )}
+      <div
+        key={aviso.id}
+        style={{
+          background: "#222",
+          borderRadius: "16px",
+          padding: "30px",
+          textAlign: "center",
+          width: "80%",
+          maxWidth: "900px",
+          boxShadow: "0px 0px 30px rgba(0,0,0,0.6)",
+          transition: "all 0.5s ease-in-out",
+          zIndex: 10,
+        }}
+      >
+        {aviso.titulo && (
+          <h2
+            style={{ fontSize: "2rem", marginBottom: "20px", color: "#4DA6FF" }}
+          >
+            {aviso.titulo}
+          </h2>
+        )}
 
-          {aviso.tipo === "video" && (
-            <video
-              ref={videoRef}
-              src={aviso.url}
-              autoPlay
-              muted
-              controls={false}
-              style={{ width: "100%", borderRadius: "12px" }}
-            />
-          )}
+        {aviso.tipo === "texto" && (
+          <p style={{ fontSize: "2rem", lineHeight: "1.5" }}>
+            {aviso.descripcion}
+          </p>
+        )}
 
-          {aviso.tipo === "imagen" && (
-            <Image
-              src={aviso.imagen_url}
-              alt="aviso"
-              width={800}
-              height={450}
-              style={{ borderRadius: "12px", width: "100%", height: "auto" }}
-            />
-          )}
-        </div>
+        {aviso.tipo === "video" && (
+          <video
+            ref={videoRef}
+            src={aviso.url}
+            autoPlay
+            muted
+            controls={false}
+            style={{ width: "100%", borderRadius: "12px" }}
+          />
+        )}
+
+        {aviso.tipo === "imagen" && (
+          <Image
+            src={aviso.imagen_url}
+            alt="aviso"
+            width={800}
+            height={450}
+            style={{ borderRadius: "12px", width: "100%", height: "auto" }}
+          />
+        )}
       </div>
     </div>
   );
