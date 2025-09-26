@@ -3,14 +3,13 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../../supabaseClient";
 import Image from "next/image";
-import { Fireworks } from "fireworks-js";
+import confetti from "canvas-confetti";
 
 export default function DisplayPage() {
   const [avisos, setAvisos] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shownIds, setShownIds] = useState(new Set());
   const videoRef = useRef(null);
-  const fireworksRef = useRef(null);
   const ROTATION_TIME = 3000;
 
   // --- Sonido ---
@@ -86,7 +85,7 @@ export default function DisplayPage() {
     }
   }, [avisos, currentIndex]);
 
-  // Fireworks + Sonido
+  // Confeti + Sonido
   useEffect(() => {
     if (avisos.length === 0) return;
     const aviso = avisos[currentIndex];
@@ -96,25 +95,12 @@ export default function DisplayPage() {
         audio.currentTime = 0;
         audio.play().catch((e) => console.log("Error al reproducir audio:", e));
       }
-      // Fireworks
-      if (fireworksRef.current) {
-        const fireworks = new Fireworks(fireworksRef.current, {
-          rocketsPoint: 50,
-          speed: 3,
-          acceleration: 1.05,
-          friction: 0.98,
-          gravity: 1.5,
-          particles: 100,
-          trace: 3,
-          explosion: 5,
-          intensity: 30,
-          brightness: { min: 50, max: 80 },
-          decay: 0.015,
-          delay: { min: 0, max: 0 },
-        });
-        fireworks.start();
-        setTimeout(() => fireworks.stop(), 1500);
-      }
+      // Confeti
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { x: 0.5, y: 0.6 },
+      });
       setShownIds((prev) => new Set(prev).add(aviso.id));
     }
   }, [avisos, currentIndex, shownIds, soundEnabled, audio]);
@@ -153,20 +139,6 @@ export default function DisplayPage() {
         overflow: "hidden",
       }}
     >
-      {/* 🔥 Contenedor para Fireworks */}
-      <div
-        ref={fireworksRef}
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          pointerEvents: "none",
-          zIndex: 5,
-        }}
-      />
-
       {/* Contenedor rotado */}
       <div
         style={{
