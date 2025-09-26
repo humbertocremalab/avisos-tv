@@ -20,7 +20,6 @@ export default function DisplayPage() {
   useEffect(() => {
     const enabled = localStorage.getItem("soundEnabled") === "true";
     setSoundEnabled(enabled);
-
     if (enabled) {
       const newAudio = new Audio("/audio/alerta.ogg");
       newAudio.volume = 1;
@@ -47,7 +46,6 @@ export default function DisplayPage() {
       .from("avisos")
       .select("*")
       .order("created_at", { ascending: false });
-
     if (!error) {
       setAvisos(data);
       if (currentIndex >= data.length) setCurrentIndex(0);
@@ -56,7 +54,6 @@ export default function DisplayPage() {
 
   useEffect(() => {
     fetchAvisos();
-
     const channel = supabase
       .channel("avisos-changes")
       .on(
@@ -65,16 +62,13 @@ export default function DisplayPage() {
         () => fetchAvisos()
       )
       .subscribe();
-
     return () => supabase.removeChannel(channel);
   }, []);
 
   useEffect(() => {
     if (avisos.length === 0) return;
-
     let interval;
     const aviso = avisos[currentIndex];
-
     if (aviso.tipo === "video") {
       const video = videoRef.current;
       if (video) {
@@ -92,10 +86,9 @@ export default function DisplayPage() {
     }
   }, [avisos, currentIndex]);
 
-  // 🔥 Fireworks + Sonido
+  // Fireworks + Sonido
   useEffect(() => {
     if (avisos.length === 0) return;
-
     const aviso = avisos[currentIndex];
     if (!shownIds.has(aviso.id)) {
       // Sonido
@@ -103,7 +96,6 @@ export default function DisplayPage() {
         audio.currentTime = 0;
         audio.play().catch((e) => console.log("Error al reproducir audio:", e));
       }
-
       // Fireworks
       if (fireworksRef.current) {
         const fireworks = new Fireworks(fireworksRef.current, {
@@ -121,9 +113,8 @@ export default function DisplayPage() {
           delay: { min: 0, max: 0 },
         });
         fireworks.start();
-        setTimeout(() => fireworks.stop(), 1500); // Duración de la animación
+        setTimeout(() => fireworks.stop(), 1500);
       }
-
       setShownIds((prev) => new Set(prev).add(aviso.id));
     }
   }, [avisos, currentIndex, shownIds, soundEnabled, audio]);
@@ -152,14 +143,14 @@ export default function DisplayPage() {
       style={{
         background: "linear-gradient(135deg, #4f46e5, #9333ea)",
         color: "white",
-        minHeight: "100vh",
-        minWidth: "100vw",
+        width: "100vw",
+        height: "100vh",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        padding: "40px",
         fontFamily: "'Poppins', sans-serif",
         position: "relative",
+        overflow: "hidden",
       }}
     >
       {/* 🔊 Botón de sonido */}
@@ -197,54 +188,67 @@ export default function DisplayPage() {
         }}
       />
 
+      {/* Contenedor rotado */}
       <div
-        key={aviso.id}
         style={{
-          background: "#222",
-          borderRadius: "16px",
-          padding: "30px",
-          textAlign: "center",
-          width: "80%",
-          maxWidth: "900px",
-          boxShadow: "0px 0px 30px rgba(0,0,0,0.6)",
-          transition: "all 0.5s ease-in-out",
-          zIndex: 10,
+          transform: "rotate(-90deg)",
+          transformOrigin: "center center",
+          width: "100vh",
+          height: "100vw",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
         }}
       >
-        {aviso.titulo && (
-          <h2
-            style={{ fontSize: "2rem", marginBottom: "20px", color: "#4DA6FF" }}
-          >
-            {aviso.titulo}
-          </h2>
-        )}
+        <div
+          key={aviso.id}
+          style={{
+            background: "#222",
+            borderRadius: "16px",
+            padding: "30px",
+            textAlign: "center",
+            width: "80%",
+            maxWidth: "900px",
+            boxShadow: "0px 0px 30px rgba(0,0,0,0.6)",
+            transition: "all 0.5s ease-in-out",
+            zIndex: 10,
+          }}
+        >
+          {aviso.titulo && (
+            <h2
+              style={{ fontSize: "2rem", marginBottom: "20px", color: "#4DA6FF" }}
+            >
+              {aviso.titulo}
+            </h2>
+          )}
 
-        {aviso.tipo === "texto" && (
-          <p style={{ fontSize: "2rem", lineHeight: "1.5" }}>
-            {aviso.descripcion}
-          </p>
-        )}
+          {aviso.tipo === "texto" && (
+            <p style={{ fontSize: "2rem", lineHeight: "1.5" }}>
+              {aviso.descripcion}
+            </p>
+          )}
 
-        {aviso.tipo === "video" && (
-          <video
-            ref={videoRef}
-            src={aviso.url}
-            autoPlay
-            muted
-            controls={false}
-            style={{ width: "100%", borderRadius: "12px" }}
-          />
-        )}
+          {aviso.tipo === "video" && (
+            <video
+              ref={videoRef}
+              src={aviso.url}
+              autoPlay
+              muted
+              controls={false}
+              style={{ width: "100%", borderRadius: "12px" }}
+            />
+          )}
 
-        {aviso.tipo === "imagen" && (
-          <Image
-            src={aviso.imagen_url}
-            alt="aviso"
-            width={800}
-            height={450}
-            style={{ borderRadius: "12px", width: "100%", height: "auto" }}
-          />
-        )}
+          {aviso.tipo === "imagen" && (
+            <Image
+              src={aviso.imagen_url}
+              alt="aviso"
+              width={800}
+              height={450}
+              style={{ borderRadius: "12px", width: "100%", height: "auto" }}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
