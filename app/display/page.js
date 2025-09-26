@@ -10,7 +10,7 @@ export default function DisplayPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shownIds, setShownIds] = useState(new Set());
   const videoRef = useRef(null);
-  const ROTATION_TIME = 7000;
+  const ROTATION_TIME = 3000;
 
   // --- NUEVO: sonido ---
   const [soundEnabled, setSoundEnabled] = useState(false);
