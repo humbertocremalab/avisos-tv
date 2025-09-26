@@ -15,31 +15,6 @@ export default function DashboardPage() {
   const [avisos, setAvisos] = useState([]);
   const router = useRouter(); // Inicializar router
 
-  // --- NUEVO: Control de sonido ---
-  const [soundEnabled, setSoundEnabled] = useState(false);
-  const [audio, setAudio] = useState(null);
-
-  useEffect(() => {
-    const enabled = localStorage.getItem("soundEnabled") === "true";
-    setSoundEnabled(enabled);
-    if (enabled) {
-      const newAudio = new Audio("/audio/alerta.ogg");
-      newAudio.volume = 1;
-      setAudio(newAudio);
-    }
-  }, []);
-
-  const toggleSound = () => {
-    const newState = !soundEnabled;
-    setSoundEnabled(newState);
-    localStorage.setItem("soundEnabled", newState);
-    if (newState && !audio) {
-      const newAudio = new Audio("/audio/alerta.ogg");
-      newAudio.volume = 1;
-      setAudio(newAudio);
-    }
-  };
-
   // --- Verificación de sesión al cargar ---
   useEffect(() => {
     const checkSession = async () => {
@@ -152,23 +127,6 @@ export default function DashboardPage() {
         Cerrar sesión
       </button>
 
-      {/* NUEVO: Botón de sonido */}
-      <button
-        onClick={toggleSound}
-        style={{
-          padding: "8px 16px",
-          marginBottom: "20px",
-          borderRadius: "8px",
-          background: soundEnabled ? "#22c55e" : "#f87171",
-          color: "#fff",
-          border: "none",
-          cursor: "pointer",
-          fontWeight: "600",
-        }}
-      >
-        {soundEnabled ? "Sonido Activado" : "Activar Sonido"}
-      </button>
-
       <h1
         style={{
           fontSize: "2rem",
@@ -232,52 +190,21 @@ export default function DashboardPage() {
           }}
         />
 
-       {tipo === "texto" && (
-  <>
-    <textarea
-      placeholder="Descripción"
-      value={descripcion}
-      onChange={(e) => setDescripcion(e.target.value)}
-      style={{
-        padding: "10px",
-        fontSize: "1rem",
-        borderRadius: "8px",
-        border: "1px solid #ccc",
-        minHeight: "100px",
-      }}
-      required
-    />
-
-    {/* Toggle de sonido */}
-    <button
-      type="button"
-      onClick={() => {
-        const newState = !soundEnabled;
-        setSoundEnabled(newState);
-        localStorage.setItem("soundEnabled", newState);
-
-        if (newState) {
-          const preload = new Audio("/audio/alerta.ogg");
-          preload.volume = 0.5; // sonido más bajo en la precarga
-          preload.play().catch(() => {});
-          setAudio(preload);
-        }
-      }}
-      style={{
-        padding: "10px",
-        borderRadius: "8px",
-        background: soundEnabled ? "#22c55e" : "#f87171",
-        color: "#fff",
-        border: "none",
-        cursor: "pointer",
-        fontWeight: "600",
-        marginTop: "10px",
-      }}
-    >
-      {soundEnabled ? "Con sonido 🔊" : "Sin sonido 🔇"}
-    </button>
-  </>
-)}
+        {tipo === "texto" && (
+          <textarea
+            placeholder="Descripción"
+            value={descripcion}
+            onChange={(e) => setDescripcion(e.target.value)}
+            style={{
+              padding: "10px",
+              fontSize: "1rem",
+              borderRadius: "8px",
+              border: "1px solid #ccc",
+              minHeight: "100px",
+            }}
+            required
+          />
+        )}
 
         {tipo === "video" && (
           <input
