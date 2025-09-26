@@ -100,8 +100,7 @@ export default function DisplayPage() {
       }
       // Mostrar confetti
       setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 2500); // Confetti dura 2.5s
-      setShownIds((prev) => new Set(prev).add(aviso.id));
+setTimeout(() => setShowConfetti(false), ROTATION_TIME - 500); // termina un poco antes de cambiar
     }
   }, [avisos, currentIndex, shownIds, soundEnabled, audio]);
 
@@ -140,14 +139,28 @@ export default function DisplayPage() {
       }}
     >
       {/* Confetti dentro del contenedor rotado */}
-      {showConfetti && (
-        <Confetti
-          width={window.innerHeight}  // intercambiamos width y height por la rotación
-          height={window.innerWidth}
-          numberOfPieces={200}
-          recycle={false}
-        />
-      )}
+     {showConfetti && (
+  <div
+    style={{
+      position: "absolute",
+      width: "100vh",  // intercambiado por la rotación
+      height: "100vw",
+      top: 0,
+      left: 0,
+      transform: "rotate(-90deg)",
+      transformOrigin: "center center",
+      pointerEvents: "none",
+      zIndex: 5,
+    }}
+  >
+    <Confetti
+      width={window.innerHeight}
+      height={window.innerWidth}
+      numberOfPieces={200}
+      recycle={false}
+    />
+  </div>
+)}
 
       {/* Contenedor rotado */}
       <div
