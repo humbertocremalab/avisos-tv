@@ -57,19 +57,30 @@ export default function DisplayPage() {
       .channel("avisos-changes")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "avisos" },
+        { event: "INSERT", schema: "public", table: "avisos" },
         (payload) => {
-          if (payload.eventType === "INSERT") {
-            setAvisos((prev) => [payload.new, ...prev]);
-            setCurrentIndex(0);
-          } else if (payload.eventType === "DELETE") {
-            setAvisos((prev) => prev.filter((a) => a.id !== payload.old.id));
-            if (currentIndex >= avisos.length - 1) setCurrentIndex(0);
-          } else if (payload.eventType === "UPDATE") {
-            setAvisos((prev) =>
-              prev.map((a) => (a.id === payload.new.id ? payload.new : a))
-            );
-          }
+          console.log("Nuevo aviso detectado:", payload.new);
+          setAvisos((prev) => [payload.new, ...prev]);
+          setCurrentIndex(0);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "avisos" },
+        (payload) => {
+          console.log("Aviso eliminado:", payload.old);
+          setAvisos((prev) => prev.filter((a) => a.id !== payload.old.id));
+          if (currentIndex >= avisos.length - 1) setCurrentIndex(0);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "avisos" },
+        (payload) => {
+          console.log("Aviso actualizado:", payload.new);
+          setAvisos((prev) =>
+            prev.map((a) => (a.id === payload.new.id ? payload.new : a))
+          );
         }
       )
       .subscribe();
@@ -108,7 +119,7 @@ export default function DisplayPage() {
     if (!shownIds.has(aviso.id) && aviso.tipo === "texto") {
       if (soundEnabled && audio) {
         audio.currentTime = 0;
-        audio.play().catch((e) => console.log(e));
+        audio.play().catch((e) => console.log("Error al reproducir audio", e));
       }
       confetti({ particleCount: 150, spread: 100, origin: { x: 0.5, y: 0.6 } });
       setShownIds((prev) => new Set(prev).add(aviso.id));
