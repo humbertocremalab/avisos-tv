@@ -7,13 +7,13 @@ export default function DisplayPage() {
   const [avisos, setAvisos] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shownIds, setShownIds] = useState(new Set());
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef(null);
   const ROTATION_TIME = 20000;
 
   const [soundEnabled, setSoundEnabled] = useState(false);
-  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  const [audio, setAudio] = useState(null);
 
-  // Carga estado de sonido
+  // Inicializa audio
   useEffect(() => {
     const enabled = localStorage.getItem("soundEnabled") === "true";
     setSoundEnabled(enabled);
@@ -38,20 +38,19 @@ export default function DisplayPage() {
     }
   };
 
-  // Fetch inicial de avisos
+  // Trae avisos
   const fetchAvisos = async () => {
     const { data, error } = await supabase
       .from("avisos")
       .select("*")
       .order("created_at", { ascending: false });
-
     if (!error && data) {
       setAvisos(data);
       if (currentIndex >= data.length) setCurrentIndex(0);
     }
   };
 
-  // Realtime + fetch inicial
+  // Realtime + carga inicial
   useEffect(() => {
     fetchAvisos();
 
@@ -60,34 +59,31 @@ export default function DisplayPage() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "avisos" },
-        async (payload) => {
-          console.log("Evento Realtime:", payload);
-
-          // Refetch completo para asegurar actualización
-          await fetchAvisos();
-
-          // Si es un texto nuevo, reproducir confeti y sonido
-          if (payload.eventType === "INSERT" && payload.new.tipo === "texto") {
-            if (soundEnabled && audio) {
-              audio.currentTime = 0;
-              audio.play().catch((e) => console.log("Error al reproducir audio", e));
-            }
-            confetti({ particleCount: 150, spread: 100, origin: { x: 0.5, y: 0.6 } });
+        (payload) => {
+          console.log("Evento realtime:", payload);
+          // Actualiza lista según evento
+          if (payload.eventType === "INSERT") {
+            setAvisos((prev) => [payload.new, ...prev]);
+            setCurrentIndex(0);
+          } else if (payload.eventType === "DELETE") {
+            setAvisos((prev) => prev.filter((a) => a.id !== payload.old.id));
+            if (currentIndex >= avisos.length - 1) setCurrentIndex(0);
+          } else if (payload.eventType === "UPDATE") {
+            setAvisos((prev) =>
+              prev.map((a) => (a.id === payload.new.id ? payload.new : a))
+            );
           }
-
-          // Reiniciar carrusel al agregar nuevo aviso
-          if (payload.eventType === "INSERT") setCurrentIndex(0);
         }
       )
       .subscribe();
 
     return () => supabase.removeChannel(channel);
-  }, [soundEnabled, audio]);
+  }, []);
 
   // Rotación automática
   useEffect(() => {
     if (avisos.length === 0) return;
-    let interval: NodeJS.Timeout;
+    let interval;
     const aviso = avisos[currentIndex];
 
     if (aviso.tipo === "video") {
@@ -107,7 +103,7 @@ export default function DisplayPage() {
     }
   }, [avisos, currentIndex]);
 
-  // 🎉 Confeti + sonido SOLO en avisos de texto
+  // 🎉 Confeti + sonido SOLO en textos nuevos
   useEffect(() => {
     if (avisos.length === 0) return;
     const aviso = avisos[currentIndex];
