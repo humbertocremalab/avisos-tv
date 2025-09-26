@@ -2,37 +2,33 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../supabaseClient";
 import Image from "next/image";
-import { useRouter } from "next/navigation"; // Importar router
+import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
   const [tipo, setTipo] = useState("texto");
   const [titulo, setTitulo] = useState("");
   const [descripcion, setDescripcion] = useState("");
-  const [videoUrl, setVideoUrl] = useState("");
-  const [imagenUrl, setImagenUrl] = useState("");
+  const [file, setFile] = useState(null); // archivo local
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [avisos, setAvisos] = useState([]);
-  const router = useRouter(); // Inicializar router
+  const router = useRouter();
 
-  // --- Verificación de sesión al cargar ---
+  // --- Verificación de sesión ---
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push("/login");
-      }
+      if (!session) router.push("/login");
     };
     checkSession();
 
-    // Inyectar tipografía Poppins
+    // Tipografía Poppins
     const link = document.createElement("link");
     link.href =
       "https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap";
     link.rel = "stylesheet";
     document.head.appendChild(link);
 
-    // Cargar avisos
     cargarAvisos();
   }, []);
 
@@ -41,22 +37,35 @@ export default function DashboardPage() {
       .from("avisos")
       .select("*")
       .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("❌ Error cargando avisos:", error);
-    } else {
-      setAvisos(data);
-    }
+    if (!error) setAvisos(data);
   };
 
-  // --- Función para cerrar sesión ---
+  // --- Logout ---
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
+    if (!error) router.push("/login");
+  };
+
+  // --- Subir archivo a Supabase Storage ---
+  const uploadFile = async () => {
+    if (!file) return null;
+
+    const fileName = `${Date.now()}-${file.name}`;
+    const { error } = await supabase.storage
+      .from("avisos-media")
+      .upload(fileName, file);
+
     if (error) {
-      console.error("❌ Error al cerrar sesión:", error.message);
-    } else {
-      router.push("/login");
+      console.error("❌ Error al subir archivo:", error);
+      setMessage("❌ Error al subir archivo: " + error.message);
+      return null;
     }
+
+    const { data } = supabase.storage
+      .from("avisos-media")
+      .getPublicUrl(fileName);
+
+    return data.publicUrl;
   };
 
   const handleSubmit = async (event) => {
@@ -64,13 +73,18 @@ export default function DashboardPage() {
     setLoading(true);
     setMessage("");
 
+    let fileUrl = null;
+    if (tipo !== "texto" && file) {
+      fileUrl = await uploadFile();
+    }
+
     const { error } = await supabase.from("avisos").insert([
       {
         tipo,
         titulo,
         descripcion: tipo === "texto" ? descripcion : null,
-        url: tipo === "video" ? videoUrl : null,
-        imagen_url: tipo === "imagen" ? imagenUrl : null,
+        url: tipo === "video" ? fileUrl : null,
+        imagen_url: tipo === "imagen" ? fileUrl : null,
       },
     ]);
 
@@ -81,8 +95,7 @@ export default function DashboardPage() {
       setMessage("✅ Aviso agregado con éxito");
       setTitulo("");
       setDescripcion("");
-      setVideoUrl("");
-      setImagenUrl("");
+      setFile(null);
       cargarAvisos();
     }
 
@@ -91,11 +104,7 @@ export default function DashboardPage() {
 
   const borrarAviso = async (id) => {
     const { error } = await supabase.from("avisos").delete().eq("id", id);
-    if (error) {
-      console.error("❌ Error al borrar aviso:", error);
-    } else {
-      cargarAvisos();
-    }
+    if (!error) cargarAvisos();
   };
 
   return (
@@ -108,7 +117,7 @@ export default function DashboardPage() {
         position: "relative",
       }}
     >
-      {/* Botón de Cerrar Sesión */}
+      {/* Logout */}
       <button
         onClick={handleLogout}
         style={{
@@ -170,9 +179,9 @@ export default function DashboardPage() {
               marginTop: "5px",
             }}
           >
-            <option value="texto">Agregar Texto</option>
-            <option value="video">Agregar Video</option>
-            <option value="imagen">Agregar Imagen</option>
+            <option value="texto">Texto</option>
+            <option value="video">Video</option>
+            <option value="imagen">Imagen</option>
           </select>
         </label>
 
@@ -206,28 +215,11 @@ export default function DashboardPage() {
           />
         )}
 
-        {tipo === "video" && (
+        {tipo !== "texto" && (
           <input
-            type="text"
-            placeholder="URL del video"
-            value={videoUrl}
-            onChange={(e) => setVideoUrl(e.target.value)}
-            style={{
-              padding: "10px",
-              fontSize: "1rem",
-              borderRadius: "8px",
-              border: "1px solid #cececeff",
-            }}
-            required
-          />
-        )}
-
-        {tipo === "imagen" && (
-          <input
-            type="text"
-            placeholder="URL de la imagen"
-            value={imagenUrl}
-            onChange={(e) => setImagenUrl(e.target.value)}
+            type="file"
+            accept={tipo === "imagen" ? "image/*" : "video/*"}
+            onChange={(e) => setFile(e.target.files[0])}
             style={{
               padding: "10px",
               fontSize: "1rem",
@@ -302,7 +294,13 @@ export default function DashboardPage() {
                 [{aviso.tipo}]
               </span>
               {aviso.tipo === "texto" && <p>{aviso.descripcion}</p>}
-              {aviso.tipo === "video" && <p>{aviso.url}</p>}
+              {aviso.tipo === "video" && (
+                <video
+                  src={aviso.url}
+                  controls
+                  style={{ maxWidth: "100%", borderRadius: "12px" }}
+                />
+              )}
               {aviso.tipo === "imagen" && (
                 <Image
                   src={aviso.imagen_url}

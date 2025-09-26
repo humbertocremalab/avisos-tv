@@ -40,14 +40,33 @@ export default function DisplayPage() {
     }
   };
 
+  // --- Obtener avisos ---
   const fetchAvisos = async () => {
     const { data, error } = await supabase
       .from("avisos")
       .select("*")
       .order("created_at", { ascending: false });
+
     if (!error) {
-      setAvisos(data);
-      if (currentIndex >= data.length) setCurrentIndex(0);
+      // Generar URLs públicas para imágenes/videos de Supabase
+      const avisosConUrl = data.map((aviso) => {
+        if (aviso.tipo === "imagen" && aviso.imagen_url) {
+          const { data: publicUrl } = supabase.storage
+            .from("avisos") // 👈 tu bucket
+            .getPublicUrl(aviso.imagen_url);
+          return { ...aviso, imagen_url: publicUrl.publicUrl };
+        }
+        if (aviso.tipo === "video" && aviso.url) {
+          const { data: publicUrl } = supabase.storage
+            .from("avisos") // 👈 tu bucket
+            .getPublicUrl(aviso.url);
+          return { ...aviso, url: publicUrl.publicUrl };
+        }
+        return aviso;
+      });
+
+      setAvisos(avisosConUrl);
+      if (currentIndex >= avisosConUrl.length) setCurrentIndex(0);
     }
   };
 
@@ -64,6 +83,7 @@ export default function DisplayPage() {
     return () => supabase.removeChannel(channel);
   }, []);
 
+  // Rotación automática
   useEffect(() => {
     if (avisos.length === 0) return;
     let interval;
@@ -85,7 +105,7 @@ export default function DisplayPage() {
     }
   }, [avisos, currentIndex]);
 
-  // Confeti + Sonido
+  // Confeti + Sonido al mostrar nuevo aviso
   useEffect(() => {
     if (avisos.length === 0) return;
     const aviso = avisos[currentIndex];
@@ -95,7 +115,7 @@ export default function DisplayPage() {
         audio.currentTime = 0;
         audio.play().catch((e) => console.log("Error al reproducir audio:", e));
       }
-      // Confeti
+      // 🎉 Confeti
       confetti({
         particleCount: 150,
         spread: 100,
