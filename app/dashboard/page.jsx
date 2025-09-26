@@ -63,8 +63,21 @@ export default function DashboardPage() {
           .from("avisos-media")
           .getPublicUrl(filePath);
 
-        if (tipo === "video") url = publicUrl.publicUrl;
-        if (tipo === "imagen") imagen_url = publicUrl.publicUrl;
+        if (tipo === "video") {
+  const { data: publicData } = supabase
+    .storage
+    .from("avisos-media")
+    .getPublicUrl(filePath);
+  url = publicData.publicUrl;
+}
+
+if (tipo === "imagen") {
+  const { data: publicData } = supabase
+    .storage
+    .from("avisos-media")
+    .getPublicUrl(filePath);
+  imagen_url = publicData.publicUrl;
+}
       }
 
       const { error } = await supabase.from("avisos").insert([
