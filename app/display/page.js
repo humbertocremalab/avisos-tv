@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../../supabaseClient";
+import Image from "next/image";
 import confetti from "canvas-confetti";
 
 export default function DisplayPage() {
@@ -43,37 +44,46 @@ export default function DisplayPage() {
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (!error) {
+    if (!error && data) {
       setAvisos(data);
       if (currentIndex >= data.length) setCurrentIndex(0);
     }
   };
 
-useEffect(() => {
-  fetchAvisos();
+  useEffect(() => {
+    fetchAvisos();
 
-  const channel = supabase
-    .channel("avisos-changes")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "avisos" },
-      (payload) => {
-        console.log("Cambio detectado:", payload);
-        fetchAvisos();
-      }
-    )
-    .subscribe();
+    // ✅ Canal realtime que reacciona en INSERT/DELETE/UPDATE
+    const channel = supabase
+      .channel("avisos-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "avisos" },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            setAvisos((prev) => [payload.new, ...prev]);
+            setCurrentIndex(0); // 👉 que arranque en el nuevo
+          } else if (payload.eventType === "DELETE") {
+            setAvisos((prev) => prev.filter((a) => a.id !== payload.old.id));
+            if (currentIndex >= avisos.length - 1) setCurrentIndex(0);
+          } else if (payload.eventType === "UPDATE") {
+            setAvisos((prev) =>
+              prev.map((a) => (a.id === payload.new.id ? payload.new : a))
+            );
+          }
+        }
+      )
+      .subscribe();
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, []);
+    return () => supabase.removeChannel(channel);
+  }, []);
 
   // Rotación automática
   useEffect(() => {
     if (avisos.length === 0) return;
     let interval;
     const aviso = avisos[currentIndex];
+
     if (aviso.tipo === "video") {
       const video = videoRef.current;
       if (video) {
@@ -91,11 +101,11 @@ useEffect(() => {
     }
   }, [avisos, currentIndex]);
 
-  // Confeti + sonido al mostrar nuevo aviso
+  // Confeti + sonido SOLO en avisos tipo texto
   useEffect(() => {
     if (avisos.length === 0) return;
     const aviso = avisos[currentIndex];
-    if (!shownIds.has(aviso.id)) {
+    if (!shownIds.has(aviso.id) && aviso.tipo === "texto") {
       if (soundEnabled && audio) {
         audio.currentTime = 0;
         audio.play().catch((e) => console.log(e));
@@ -215,9 +225,11 @@ useEffect(() => {
           )}
 
           {aviso.tipo === "imagen" && (
-            <img
+            <Image
               src={aviso.imagen_url}
               alt="aviso"
+              width={800}
+              height={450}
               style={{ borderRadius: "12px", width: "100%", height: "auto" }}
             />
           )}
