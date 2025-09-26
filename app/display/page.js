@@ -22,11 +22,24 @@ export default function DisplayPage() {
 
     if (enabled) {
       const newAudio = new Audio("/audio/alerta.ogg");
-      newAudio.preload = "auto"; // 🔥 precarga
       newAudio.volume = 1;
       setAudio(newAudio);
     }
   }, []);
+
+  const toggleSound = () => {
+    if (!soundEnabled) {
+      const newAudio = new Audio("/audio/alerta.ogg");
+      newAudio.volume = 1;
+      setAudio(newAudio);
+      localStorage.setItem("soundEnabled", "true");
+      setSoundEnabled(true);
+    } else {
+      localStorage.setItem("soundEnabled", "false");
+      setSoundEnabled(false);
+      setAudio(null);
+    }
+  };
 
   const fetchAvisos = async () => {
     const { data, error } = await supabase
@@ -84,9 +97,8 @@ export default function DisplayPage() {
 
     const aviso = avisos[currentIndex];
     if (!shownIds.has(aviso.id)) {
-      // Sonido solo si está activado
       if (soundEnabled && audio) {
-        audio.currentTime = 0; // 🔄 reinicia
+        audio.currentTime = 0;
         audio.play().catch((e) =>
           console.log("Error al reproducir audio:", e)
         );
@@ -132,8 +144,29 @@ export default function DisplayPage() {
         alignItems: "center",
         padding: "40px",
         fontFamily: "'Poppins', sans-serif",
+        position: "relative",
       }}
     >
+      {/* 🔊 Botón de sonido */}
+      <button
+        onClick={toggleSound}
+        style={{
+          position: "absolute",
+          top: "20px",
+          right: "20px",
+          padding: "10px 16px",
+          background: soundEnabled ? "#22c55e" : "#ef4444",
+          border: "none",
+          borderRadius: "8px",
+          color: "white",
+          fontWeight: "bold",
+          cursor: "pointer",
+          boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+        }}
+      >
+        {soundEnabled ? "🔊 Sonido ON" : "🔇 Sonido OFF"}
+      </button>
+
       <div
         key={aviso.id}
         style={{
