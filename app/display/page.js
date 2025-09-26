@@ -96,25 +96,31 @@ export default function DisplayPage() {
         audio.currentTime = 0;
         audio.play().catch((e) => console.log("Error al reproducir audio:", e));
       }
-      // Fireworks
+
+      // Fireworks realista dentro del contenedor rotado
       if (fireworksRef.current) {
         const fireworks = new Fireworks(fireworksRef.current, {
           rocketsPoint: 50,
-          speed: 3,
-          acceleration: 1.05,
-          friction: 0.98,
-          gravity: 1.5,
-          particles: 100,
-          trace: 3,
-          explosion: 5,
+          speed: 4,
+          acceleration: 1.1,
+          friction: 0.95,
+          gravity: 1.2,
+          particles: 120,
+          trace: 6,
+          explosion: 6,
           intensity: 30,
-          brightness: { min: 50, max: 80 },
+          brightness: { min: 50, max: 90 },
           decay: 0.015,
           delay: { min: 0, max: 0 },
+          autoresize: true,
+          opacity: 0.8,
+          sound: false, // ya tenemos nuestro audio
+          mouse: false,
         });
         fireworks.start();
-        setTimeout(() => fireworks.stop(), 1500); // dura 1.5s
+        setTimeout(() => fireworks.stop(), 2000); // dura 2 segundos
       }
+
       setShownIds((prev) => new Set(prev).add(aviso.id));
     }
   }, [avisos, currentIndex, shownIds, soundEnabled, audio]);
@@ -153,20 +159,6 @@ export default function DisplayPage() {
         overflow: "hidden",
       }}
     >
-      {/* 🔥 Contenedor para Fireworks */}
-      <div
-        ref={fireworksRef}
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          pointerEvents: "none",
-          zIndex: 5,
-        }}
-      />
-
       {/* Contenedor rotado */}
       <div
         style={{
@@ -180,7 +172,21 @@ export default function DisplayPage() {
           position: "relative",
         }}
       >
-        {/* 🔊 Botón de sonido rotado */}
+        {/* 🔥 Fireworks dentro del contenedor rotado */}
+        <div
+          ref={fireworksRef}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            pointerEvents: "none",
+            zIndex: 5,
+          }}
+        />
+
+        {/* 🔊 Botón de sonido */}
         <button
           onClick={toggleSound}
           style={{
@@ -224,9 +230,7 @@ export default function DisplayPage() {
           )}
 
           {aviso.tipo === "texto" && (
-            <p style={{ fontSize: "2rem", lineHeight: "1.5" }}>
-              {aviso.descripcion}
-            </p>
+            <p style={{ fontSize: "2rem", lineHeight: "1.5" }}>{aviso.descripcion}</p>
           )}
 
           {aviso.tipo === "video" && (
