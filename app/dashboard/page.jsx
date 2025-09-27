@@ -89,9 +89,28 @@ export default function DashboardPage() {
     }
   };
 
-  const borrarAviso = async (id) => {
-    const { error } = await supabase.from("avisos").delete().eq("id", id);
-    if (!error) cargarAvisos();
+  const borrarAviso = async (aviso) => {
+    try {
+      // 1️⃣ Eliminar archivo del storage si aplica
+      if (aviso.tipo === "video" && aviso.url) {
+        const filePath = aviso.url.split("/avisos-media/")[1];
+        if (filePath) await supabase.storage.from("avisos-media").remove([filePath]);
+      }
+      if (aviso.tipo === "imagen" && aviso.imagen_url) {
+        const filePath = aviso.imagen_url.split("/avisos-media/")[1];
+        if (filePath) await supabase.storage.from("avisos-media").remove([filePath]);
+      }
+
+      // 2️⃣ Eliminar de la tabla
+      const { error } = await supabase.from("avisos").delete().eq("id", aviso.id);
+      if (error) throw error;
+
+      // 3️⃣ Actualizar lista
+      cargarAvisos();
+    } catch (err) {
+      console.error("Error al borrar aviso:", err.message);
+      setMessage("❌ Error al eliminar aviso: " + err.message);
+    }
   };
 
   return (
@@ -276,7 +295,7 @@ export default function DashboardPage() {
               )}
             </div>
             <button
-              onClick={() => borrarAviso(aviso.id)}
+              onClick={() => borrarAviso(aviso)}
               style={{
                 background: "red",
                 color: "white",
