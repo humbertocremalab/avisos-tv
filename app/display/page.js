@@ -242,7 +242,7 @@ export default function DisplayPage() {
           )}
 
           {aviso.tipo === "texto" && (
-            <p style={{ fontSize: "2rem", lineHeight: "1", whiteSpace: "pre-line" }}>
+            <p style={{ fontSize: "2.5rem", lineHeight: "1", whiteSpace: "pre-line" }}>
               {aviso.descripcion}
             </p>
           )}
