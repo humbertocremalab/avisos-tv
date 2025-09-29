@@ -13,10 +13,9 @@ export default function DisplayPage() {
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [audio, setAudio] = useState(null);
 
-  const [time, setTime] = useState("");
-  const [weather, setWeather] = useState("");
+  // Clima
+  const [weather, setWeather] = useState(null);
 
-  // Inicializa audio
   useEffect(() => {
     const enabled = localStorage.getItem("soundEnabled") === "true";
     setSoundEnabled(enabled);
@@ -25,6 +24,14 @@ export default function DisplayPage() {
       newAudio.volume = 1;
       setAudio(newAudio);
     }
+
+    // Cargar clima Monterrey, N.L.
+    fetch(
+      `https://api.openweathermap.org/data/2.5/weather?q=Monterrey,mx&units=metric&appid=865eee93fe9fc60142d6b7b1b21ea4ea`
+    )
+      .then((res) => res.json())
+      .then((data) => setWeather(data))
+      .catch((err) => console.log("Error clima:", err));
   }, []);
 
   const toggleSound = () => {
@@ -41,43 +48,6 @@ export default function DisplayPage() {
     }
   };
 
-  // Reloj en vivo
-  useEffect(() => {
-    const updateClock = () => {
-      const now = new Date();
-      setTime(
-        now.toLocaleTimeString("es-MX", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      );
-    };
-    updateClock();
-    const interval = setInterval(updateClock, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Clima (ejemplo: Ciudad de México)
-  useEffect(() => {
-    const fetchWeather = async () => {
-      try {
-        const res = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=19.4326&longitude=-99.1332&current_weather=true`
-        );
-        const data = await res.json();
-        if (data.current_weather) {
-          setWeather(`${data.current_weather.temperature}°C 🌤`);
-        }
-      } catch (error) {
-        console.error("Error obteniendo clima:", error);
-      }
-    };
-    fetchWeather();
-    const interval = setInterval(fetchWeather, 10 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Trae avisos
   const fetchAvisos = async () => {
     const { data, error } = await supabase
       .from("avisos")
@@ -89,7 +59,6 @@ export default function DisplayPage() {
     }
   };
 
-  // Realtime + carga inicial
   useEffect(() => {
     fetchAvisos();
 
@@ -117,7 +86,6 @@ export default function DisplayPage() {
     return () => supabase.removeChannel(channel);
   }, []);
 
-  // Rotación automática
   useEffect(() => {
     if (avisos.length === 0) return;
     let interval;
@@ -140,14 +108,13 @@ export default function DisplayPage() {
     }
   }, [avisos, currentIndex]);
 
-  // 🎉 Confeti + sonido SOLO en textos nuevos
   useEffect(() => {
     if (avisos.length === 0) return;
     const aviso = avisos[currentIndex];
     if (!shownIds.has(aviso.id) && aviso.tipo === "texto") {
       if (soundEnabled && audio) {
         audio.currentTime = 0;
-        audio.play().catch(() => {});
+        audio.play().catch((e) => console.log("Error al reproducir audio", e));
       }
       confetti({ particleCount: 150, spread: 100, origin: { x: 0.5, y: 0.6 } });
       setShownIds((prev) => new Set(prev).add(aviso.id));
@@ -165,7 +132,6 @@ export default function DisplayPage() {
           justifyContent: "center",
           alignItems: "center",
           fontSize: "2rem",
-          fontFamily: "'Poppins', sans-serif",
         }}
       >
         📺 No hay avisos por mostrar
@@ -173,6 +139,7 @@ export default function DisplayPage() {
     );
 
   const aviso = avisos[currentIndex];
+  const hora = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   return (
     <div
@@ -189,32 +156,6 @@ export default function DisplayPage() {
         overflow: "hidden",
       }}
     >
-{/* ⏰ Reloj y Clima - esquina inferior izquierda */}
-<div
-  style={{
-    position: "absolute",
-    bottom: "50px",   // ahora va abajo
-    left: "150px",     // pegado al lado izquierdo
-    transform: "rotate(-90deg)",
-    transformOrigin: "bottom left", // importante para que no se salga
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "2.5rem",
-    fontWeight: "600",
-    fontFamily: "'Poppins', sans-serif",
-    background: "rgba(0,0,0,0.5)",
-    padding: "12px 20px",
-    borderRadius: "12px",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-    zIndex: 20,
-  }}
->
-  <div>{time}</div>
-  <div style={{ fontSize: "1.8rem", marginTop: "6px" }}>{weather}</div>
-</div>
-
       <div
         style={{
           transform: "rotate(-90deg)",
@@ -227,6 +168,7 @@ export default function DisplayPage() {
           position: "relative",
         }}
       >
+        {/* Botón de sonido */}
         <button
           onClick={toggleSound}
           style={{
@@ -247,6 +189,31 @@ export default function DisplayPage() {
           {soundEnabled ? "🔊 Sonido ON" : "🔇 Sonido OFF"}
         </button>
 
+        {/* Hora y clima */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: "20px",
+            left: "20px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            gap: "6px",
+            fontSize: "2.8rem",
+            fontWeight: "600",
+            color: "#fff",
+            zIndex: 10,
+          }}
+        >
+          <div>🕒 {hora}</div>
+          {weather && (
+            <div>
+              🌤️ {weather.name}: {Math.round(weather.main.temp)}°C
+            </div>
+          )}
+        </div>
+
+        {/* Aviso */}
         <div
           key={aviso.id}
           style={{
@@ -259,6 +226,7 @@ export default function DisplayPage() {
             boxShadow: "0px 0px 30px rgba(0,0,0,0.6)",
             transition: "all 0.5s ease-in-out",
             zIndex: 10,
+            whiteSpace: "pre-line", // ⬅️ Respetar saltos de línea
           }}
         >
           {aviso.titulo && (
@@ -274,7 +242,7 @@ export default function DisplayPage() {
           )}
 
           {aviso.tipo === "texto" && (
-            <p style={{ fontSize: "2rem", lineHeight: "1.5" }}>
+            <p style={{ fontSize: "2rem", lineHeight: "2", whiteSpace: "pre-line" }}>
               {aviso.descripcion}
             </p>
           )}
