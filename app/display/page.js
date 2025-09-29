@@ -13,6 +13,9 @@ export default function DisplayPage() {
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [audio, setAudio] = useState(null);
 
+  const [time, setTime] = useState("");
+  const [weather, setWeather] = useState("");
+
   // Inicializa audio
   useEffect(() => {
     const enabled = localStorage.getItem("soundEnabled") === "true";
@@ -38,6 +41,42 @@ export default function DisplayPage() {
     }
   };
 
+  // Reloj en vivo
+  useEffect(() => {
+    const updateClock = () => {
+      const now = new Date();
+      setTime(
+        now.toLocaleTimeString("es-MX", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      );
+    };
+    updateClock();
+    const interval = setInterval(updateClock, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Clima (ejemplo: Ciudad de México)
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        const res = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=19.4326&longitude=-99.1332&current_weather=true`
+        );
+        const data = await res.json();
+        if (data.current_weather) {
+          setWeather(`${data.current_weather.temperature}°C 🌤`);
+        }
+      } catch (error) {
+        console.error("Error obteniendo clima:", error);
+      }
+    };
+    fetchWeather();
+    const interval = setInterval(fetchWeather, 10 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Trae avisos
   const fetchAvisos = async () => {
     const { data, error } = await supabase
@@ -60,8 +99,6 @@ export default function DisplayPage() {
         "postgres_changes",
         { event: "*", schema: "public", table: "avisos" },
         (payload) => {
-          console.log("Evento realtime:", payload);
-          // Actualiza lista según evento
           if (payload.eventType === "INSERT") {
             setAvisos((prev) => [payload.new, ...prev]);
             setCurrentIndex(0);
@@ -110,7 +147,7 @@ export default function DisplayPage() {
     if (!shownIds.has(aviso.id) && aviso.tipo === "texto") {
       if (soundEnabled && audio) {
         audio.currentTime = 0;
-        audio.play().catch((e) => console.log("Error al reproducir audio", e));
+        audio.play().catch(() => {});
       }
       confetti({ particleCount: 150, spread: 100, origin: { x: 0.5, y: 0.6 } });
       setShownIds((prev) => new Set(prev).add(aviso.id));
@@ -128,6 +165,7 @@ export default function DisplayPage() {
           justifyContent: "center",
           alignItems: "center",
           fontSize: "2rem",
+          fontFamily: "'Poppins', sans-serif",
         }}
       >
         📺 No hay avisos por mostrar
@@ -151,6 +189,32 @@ export default function DisplayPage() {
         overflow: "hidden",
       }}
     >
+{/* ⏰ Reloj y Clima - esquina inferior izquierda */}
+<div
+  style={{
+    position: "absolute",
+    bottom: "80px",   // ahora va abajo
+    left: "150px",     // pegado al lado izquierdo
+    transform: "rotate(-90deg)",
+    transformOrigin: "bottom left", // importante para que no se salga
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "2.5rem",
+    fontWeight: "600",
+    fontFamily: "'Poppins', sans-serif",
+    background: "rgba(0,0,0,0.5)",
+    padding: "12px 20px",
+    borderRadius: "12px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+    zIndex: 20,
+  }}
+>
+  <div>{time}</div>
+  <div style={{ fontSize: "1.8rem", marginTop: "6px" }}>{weather}</div>
+</div>
+
       <div
         style={{
           transform: "rotate(-90deg)",
