@@ -199,7 +199,7 @@ export default function DisplayPage() {
     flexDirection: "column",
     alignItems: "flex-start",
     gap: "8px",         // un poco más de espacio entre hora y clima
-    fontSize: "3rem",    // un poco más grande
+    fontSize: "1.5rem",    // un poco más grande
     fontWeight: "600",
     color: "#fff",
     zIndex: 10,
