@@ -205,19 +205,38 @@ export default function DashboardPage() {
         />
 
         {tipo === "texto" && (
-          <textarea
-            placeholder="Descripción"
-            value={descripcion}
-            onChange={(e) => setDescripcion(e.target.value)}
-            style={{
-              padding: "10px",
-              fontSize: "1rem",
-              borderRadius: "8px",
-              border: "1px solid #ccc",
-              minHeight: "100px",
-            }}
-            required
-          />
+          <>
+            <textarea
+              placeholder="Descripción"
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              style={{
+                padding: "10px",
+                fontSize: "1rem",
+                borderRadius: "8px",
+                border: "1px solid #ccc",
+                minHeight: "100px",
+                whiteSpace: "pre-wrap", // Respeta saltos de línea
+              }}
+              required
+            />
+            {/* Preview en tiempo real */}
+            <div
+              style={{
+                marginTop: "10px",
+                padding: "10px",
+                border: "1px dashed #999",
+                borderRadius: "8px",
+                background: "#f9f9f9",
+                fontFamily: "'Poppins', sans-serif",
+                whiteSpace: "pre-wrap",
+                maxHeight: "150px",
+                overflowY: "auto",
+              }}
+            >
+              {descripcion || "Vista previa del texto..."}
+            </div>
+          </>
         )}
 
         {(tipo === "video" || tipo === "imagen") && (
@@ -307,7 +326,9 @@ export default function DashboardPage() {
               <span style={{ fontSize: "0.9rem", color: "#555" }}>
                 [{aviso.tipo}]
               </span>
-              {aviso.tipo === "texto" && <p>{aviso.descripcion}</p>}
+              {aviso.tipo === "texto" && (
+                <p style={{ whiteSpace: "pre-wrap" }}>{aviso.descripcion}</p>
+              )}
               {aviso.tipo === "video" && <p>🎬 Video subido</p>}
               {aviso.tipo === "imagen" && (
                 <img

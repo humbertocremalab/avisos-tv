@@ -191,27 +191,27 @@ export default function DisplayPage() {
 
         {/* Hora y clima */}
         <div
-          style={{
-            position: "absolute",
-            bottom: "20px",
-            left: "20px",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-start",
-            gap: "6px",
-            fontSize: "2.8rem",
-            fontWeight: "600",
-            color: "#fff",
-            zIndex: 10,
-          }}
-        >
-          <div>🕒 {hora}</div>
-          {weather && (
-            <div>
-              🌤️ {weather.name}: {Math.round(weather.main.temp)}°C
-            </div>
-          )}
-        </div>
+  style={{
+    position: "absolute",
+    bottom: "20px",
+    left: "20px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: "8px",         // un poco más de espacio entre hora y clima
+    fontSize: "3rem",    // un poco más grande
+    fontWeight: "600",
+    color: "#fff",
+    zIndex: 10,
+  }}
+>
+  <div>🕒 {hora}</div>
+  {weather && (
+    <div>
+      🌤️ {weather.name}: {Math.round(weather.main.temp)}°C
+    </div>
+  )}
+</div>
 
         {/* Aviso */}
         <div
