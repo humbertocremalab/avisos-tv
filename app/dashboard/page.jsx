@@ -221,13 +221,36 @@ export default function DashboardPage() {
         )}
 
         {(tipo === "video" || tipo === "imagen") && (
-          <input
-            type="file"
-            accept={tipo === "imagen" ? "image/*" : "video/*"}
-            onChange={(e) => setFile(e.target.files[0])}
-            style={{ marginTop: "10px" }}
-            required
-          />
+          <div style={{ marginTop: "10px" }}>
+            <label
+              htmlFor="fileUpload"
+              style={{
+                display: "inline-block",
+                padding: "10px 16px",
+                background: "#28a745",
+                color: "white",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontWeight: "600",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+              }}
+            >
+              📂 Subir {tipo === "imagen" ? "Imagen" : "Video"}
+            </label>
+            <input
+              id="fileUpload"
+              type="file"
+              accept={tipo === "imagen" ? "image/*" : "video/*"}
+              onChange={(e) => setFile(e.target.files[0])}
+              style={{ display: "none" }}
+              required
+            />
+            {file && (
+              <p style={{ marginTop: "8px", fontSize: "0.9rem", color: "#333" }}>
+                ✅ Archivo seleccionado: <strong>{file.name}</strong>
+              </p>
+            )}
+          </div>
         )}
 
         <button
