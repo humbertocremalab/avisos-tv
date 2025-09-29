@@ -8,7 +8,7 @@ export default function DisplayPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shownIds, setShownIds] = useState(new Set());
   const videoRef = useRef(null);
-  const ROTATION_TIME = 20000;
+  const ROTATION_TIME = 30000;
 
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [audio, setAudio] = useState(null);
@@ -242,7 +242,7 @@ export default function DisplayPage() {
           )}
 
           {aviso.tipo === "texto" && (
-            <p style={{ fontSize: "2rem", lineHeight: "2", whiteSpace: "pre-line" }}>
+            <p style={{ fontSize: "2rem", lineHeight: "1", whiteSpace: "pre-line" }}>
               {aviso.descripcion}
             </p>
           )}
