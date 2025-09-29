@@ -193,7 +193,7 @@ export default function DisplayPage() {
 <div
   style={{
     position: "absolute",
-    bottom: "80px",   // ahora va abajo
+    bottom: "50px",   // ahora va abajo
     left: "150px",     // pegado al lado izquierdo
     transform: "rotate(-90deg)",
     transformOrigin: "bottom left", // importante para que no se salga
