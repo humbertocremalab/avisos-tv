@@ -17,14 +17,6 @@ export default function DisplayPage() {
 
   // ---------------- YouTube ----------------
   const [youtubeUrl, setYoutubeUrl] = useState("");
-  const iframeRef = useRef(null); // referencia al iframe para mutear via API postMessage
-
-  // ---------------- Helpers ----------------
-  const getYoutubeEmbedUrl = (url) => {
-    if (!url) return "";
-    const match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-    return match ? `https://www.youtube.com/embed/${match[1]}` : "";
-  };
 
   // ---------------- Inicialización ----------------
   useEffect(() => {
@@ -160,30 +152,11 @@ export default function DisplayPage() {
     const aviso = avisos[currentIndex];
 
     if (!shownIds.has(aviso.id) && aviso.tipo === "texto") {
-      // Mutear YouTube vía API postMessage
-      if (iframeRef.current) {
-        iframeRef.current.contentWindow.postMessage(
-          '{"event":"command","func":"mute","args":""}',
-          "*"
-        );
-      }
-
-      // Reproducir audio de aviso
       if (soundEnabled && audio) {
         audio.currentTime = 0;
         audio.play().catch((e) => console.log("Error al reproducir audio", e));
-        audio.onended = () => {
-          // Desmutear YouTube
-          if (iframeRef.current) {
-            iframeRef.current.contentWindow.postMessage(
-              '{"event":"command","func":"unMute","args":""}',
-              "*"
-            );
-          }
-        };
       }
 
-      // Confetti
       confetti({ particleCount: 150, spread: 100, origin: { x: 0.5, y: 0.6 } });
       setShownIds((prev) => new Set(prev).add(aviso.id));
     }
@@ -208,6 +181,13 @@ export default function DisplayPage() {
 
   const aviso = avisos[currentIndex];
   const hora = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  // ---------------- Función para sacar videoId ----------------
+  const extractVideoId = (url) => {
+    if (!url) return "";
+    const match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    return match ? match[1] : "";
+  };
 
   return (
     <div
@@ -237,28 +217,28 @@ export default function DisplayPage() {
           position: "relative",
         }}
       >
-        {/* YouTube iframe en esquina inferior derecha */}
-        {youtubeUrl && (
-          <iframe
-            ref={iframeRef}
-            key={youtubeUrl}
-            src={`${getYoutubeEmbedUrl(youtubeUrl)}?autoplay=1&mute=0&enablejsapi=1`}
-            style={{
-              position: "absolute",
-              bottom: "20px",
-              right: "20px",
-              width: "320px",
-              height: "180px",
-              borderRadius: "12px",
-              border: "2px solid #fff",
-              zIndex: 20,
-            }}
-            title="YouTube Display"
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        )}
+        
+      {/* YouTube iframe en esquina inferior derecha */}
+      {youtubeUrl && (
+        <iframe
+          key={youtubeUrl} // recarga cuando cambia la URL
+          src={`https://www.youtube.com/embed/${extractVideoId(youtubeUrl)}?autoplay=1&mute=1&rel=0&playsinline=1`}
+          style={{
+            position: "absolute",
+            bottom: "20px",
+            right: "20px",
+            width: "320px",
+            height: "180px",
+            borderRadius: "12px",
+            border: "2px solid #fff",
+            zIndex: 20,
+          }}
+          title="YouTube Display"
+          frameBorder="0"
+          allow="autoplay; fullscreen; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        />
+      )}
 
         {/* Botón de sonido */}
         <button
