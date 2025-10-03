@@ -243,17 +243,7 @@ const extractVideoId = (url) => {
     allowFullScreen
   />
 )}
-<button
-  onClick={() => {
-    const iframe = document.getElementById("youtube-player");
-    iframe.contentWindow.postMessage(
-      '{"event":"command","func":"unMute","args":""}',
-      "*"
-    );
-  }}
->
-  🔊 Activar música
-</button>
+
 
         {/* Botón de sonido */}
         <button
