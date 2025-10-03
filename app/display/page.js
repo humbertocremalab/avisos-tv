@@ -183,11 +183,10 @@ export default function DisplayPage() {
   const hora = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   // ---------------- Función para sacar videoId ----------------
-  const extractVideoId = (url) => {
-    if (!url) return "";
-    const match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-    return match ? match[1] : "";
-  };
+ function extractVideoId(url) {
+  const match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return match ? match[1] : null;
+}
 
   return (
     <div
@@ -219,11 +218,11 @@ export default function DisplayPage() {
       >
         
       {/* YouTube iframe en esquina inferior derecha */}
-      {youtubeUrl && (
+  {youtubeUrl && (
   <iframe
     id="youtube-player"
     key={youtubeUrl}
-    src={`https://www.youtube.com/embed/${extractVideoId(youtubeUrl)}?autoplay=1&mute=1&rel=0&playsinline=1&enablejsapi=1`}
+    src={`https://www.youtube.com/embed/${extractVideoId(youtubeUrl)}?autoplay=1&mute=1&playsinline=1&enablejsapi=1&rel=0`}
     style={{
       position: "absolute",
       bottom: "20px",
