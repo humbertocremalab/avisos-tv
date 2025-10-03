@@ -183,8 +183,10 @@ export default function DisplayPage() {
   const hora = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   // ---------------- Función para sacar videoId ----------------
- function extractVideoId(url) {
-  const match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+function extractVideoId(url) {
+  if (!url) return null;
+  const regex = /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/;
+  const match = url.match(regex);
   return match ? match[1] : null;
 }
 
@@ -218,7 +220,7 @@ export default function DisplayPage() {
       >
         
       {/* YouTube iframe en esquina inferior derecha */}
-  {youtubeUrl && (
+  {youtubeUrl && extractVideoId(youtubeUrl) && (
   <iframe
     id="youtube-player"
     key={youtubeUrl}
