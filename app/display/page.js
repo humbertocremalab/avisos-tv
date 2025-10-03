@@ -182,13 +182,12 @@ export default function DisplayPage() {
   const aviso = avisos[currentIndex];
   const hora = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-  // ---------------- Función para sacar videoId ----------------
-function extractVideoId(url) {
+// Función para extraer el ID de YouTube
+const extractVideoId = (url) => {
   if (!url) return null;
-  const regex = /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/;
-  const match = url.match(regex);
+  const match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   return match ? match[1] : null;
-}
+};
 
   return (
     <div
@@ -224,7 +223,9 @@ function extractVideoId(url) {
   <iframe
     id="youtube-player"
     key={youtubeUrl}
-    src={`https://www.youtube.com/embed/${extractVideoId(youtubeUrl)}?autoplay=1&mute=1&playsinline=1&controls=1&rel=0`}
+    src={`https://www.youtube.com/embed/${extractVideoId(
+      youtubeUrl
+    )}?autoplay=1&mute=1&playsinline=1&controls=1&rel=0`}
     style={{
       position: "absolute",
       bottom: "20px",
@@ -234,6 +235,7 @@ function extractVideoId(url) {
       borderRadius: "12px",
       border: "2px solid #fff",
       zIndex: 20,
+      backgroundColor: "#000", // 👈 fuerza el contenedor para ver si el frame se monta
     }}
     title="YouTube Display"
     frameBorder="0"
