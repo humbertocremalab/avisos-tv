@@ -220,25 +220,26 @@ export default function DisplayPage() {
         
       {/* YouTube iframe en esquina inferior derecha */}
       {youtubeUrl && (
-        <iframe
-          key={youtubeUrl} // recarga cuando cambia la URL
-          src={`https://www.youtube.com/embed/${extractVideoId(youtubeUrl)}?autoplay=1&mute=1&rel=0&playsinline=1`}
-          style={{
-            position: "absolute",
-            bottom: "20px",
-            right: "20px",
-            width: "320px",
-            height: "180px",
-            borderRadius: "12px",
-            border: "2px solid #fff",
-            zIndex: 20,
-          }}
-          title="YouTube Display"
-          frameBorder="0"
-          allow="autoplay; fullscreen; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowFullScreen
-        />
-      )}
+  <iframe
+    id="youtube-player"
+    key={youtubeUrl}
+    src={`https://www.youtube.com/embed/${extractVideoId(youtubeUrl)}?autoplay=1&mute=1&rel=0&playsinline=1&enablejsapi=1`}
+    style={{
+      position: "absolute",
+      bottom: "20px",
+      right: "20px",
+      width: "320px",
+      height: "140px",
+      borderRadius: "12px",
+      border: "2px solid #fff",
+      zIndex: 20,
+    }}
+    title="YouTube Display"
+    frameBorder="0"
+    allow="autoplay; fullscreen; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen
+  />
+)}
 
         {/* Botón de sonido */}
         <button
@@ -270,7 +271,7 @@ export default function DisplayPage() {
             background: "rgba(0,0,0,0.5)",
             border: "2px solid #fff",
             borderRadius: "12px",
-            padding: "48px 48px",
+            padding: "28px 48px",
             display: "flex",
             flexDirection: "column",
             alignItems: "flex-start",
