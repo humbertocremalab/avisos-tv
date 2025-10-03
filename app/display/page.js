@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
-import { supabase } from "../../supabaseClient";
+import { supabase } from "../../supabaseClient";  
 import confetti from "canvas-confetti";
 
 export default function DisplayPage() {
@@ -13,9 +13,20 @@ export default function DisplayPage() {
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [audio, setAudio] = useState(null);
 
-  // Clima
   const [weather, setWeather] = useState(null);
 
+  // ---------------- YouTube ----------------
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const iframeRef = useRef(null); // referencia al iframe para mutear via API postMessage
+
+  // ---------------- Helpers ----------------
+  const getYoutubeEmbedUrl = (url) => {
+    if (!url) return "";
+    const match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    return match ? `https://www.youtube.com/embed/${match[1]}` : "";
+  };
+
+  // ---------------- Inicialización ----------------
   useEffect(() => {
     const enabled = localStorage.getItem("soundEnabled") === "true";
     setSoundEnabled(enabled);
@@ -25,7 +36,7 @@ export default function DisplayPage() {
       setAudio(newAudio);
     }
 
-    // Cargar clima Monterrey, N.L.
+    // Clima
     fetch(
       `https://api.openweathermap.org/data/2.5/weather?q=Monterrey,mx&units=metric&appid=865eee93fe9fc60142d6b7b1b21ea4ea`
     )
@@ -48,6 +59,7 @@ export default function DisplayPage() {
     }
   };
 
+  // ---------------- Fetch avisos ----------------
   const fetchAvisos = async () => {
     const { data, error } = await supabase
       .from("avisos")
@@ -59,6 +71,7 @@ export default function DisplayPage() {
     }
   };
 
+  // ---------------- Suscripción a cambios en avisos ----------------
   useEffect(() => {
     fetchAvisos();
 
@@ -86,6 +99,39 @@ export default function DisplayPage() {
     return () => supabase.removeChannel(channel);
   }, []);
 
+  // ---------------- Suscripción a cambios en YouTube ----------------
+  useEffect(() => {
+    const fetchYoutube = async () => {
+      const { data, error } = await supabase
+        .from("configuracion")
+        .select("youtube_url")
+        .eq("id", 1)
+        .single();
+      if (!error && data?.youtube_url) setYoutubeUrl(data.youtube_url);
+
+      const channel = supabase
+        .channel("youtube-display")
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "configuracion",
+            filter: "id=eq.1",
+          },
+          (payload) => {
+            if (payload.new.youtube_url) setYoutubeUrl(payload.new.youtube_url);
+          }
+        )
+        .subscribe();
+
+      return () => supabase.removeChannel(channel);
+    };
+
+    fetchYoutube();
+  }, []);
+
+  // ---------------- Rotación de avisos ----------------
   useEffect(() => {
     if (avisos.length === 0) return;
     let interval;
@@ -108,14 +154,36 @@ export default function DisplayPage() {
     }
   }, [avisos, currentIndex]);
 
+  // ---------------- Avisos tipo texto con sonido ----------------
   useEffect(() => {
     if (avisos.length === 0) return;
     const aviso = avisos[currentIndex];
+
     if (!shownIds.has(aviso.id) && aviso.tipo === "texto") {
+      // Mutear YouTube vía API postMessage
+      if (iframeRef.current) {
+        iframeRef.current.contentWindow.postMessage(
+          '{"event":"command","func":"mute","args":""}',
+          "*"
+        );
+      }
+
+      // Reproducir audio de aviso
       if (soundEnabled && audio) {
         audio.currentTime = 0;
         audio.play().catch((e) => console.log("Error al reproducir audio", e));
+        audio.onended = () => {
+          // Desmutear YouTube
+          if (iframeRef.current) {
+            iframeRef.current.contentWindow.postMessage(
+              '{"event":"command","func":"unMute","args":""}',
+              "*"
+            );
+          }
+        };
       }
+
+      // Confetti
       confetti({ particleCount: 150, spread: 100, origin: { x: 0.5, y: 0.6 } });
       setShownIds((prev) => new Set(prev).add(aviso.id));
     }
@@ -152,6 +220,7 @@ export default function DisplayPage() {
         justifyContent: "center",
         alignItems: "center",
         fontFamily: "'Poppins', sans-serif",
+        fontWeight: 500,
         position: "relative",
         overflow: "hidden",
       }}
@@ -168,13 +237,36 @@ export default function DisplayPage() {
           position: "relative",
         }}
       >
+        {/* YouTube iframe en esquina inferior derecha */}
+        {youtubeUrl && (
+          <iframe
+            ref={iframeRef}
+            key={youtubeUrl}
+            src={`${getYoutubeEmbedUrl(youtubeUrl)}?autoplay=1&mute=0&enablejsapi=1`}
+            style={{
+              position: "absolute",
+              bottom: "20px",
+              right: "20px",
+              width: "320px",
+              height: "180px",
+              borderRadius: "12px",
+              border: "2px solid #fff",
+              zIndex: 20,
+            }}
+            title="YouTube Display"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        )}
+
         {/* Botón de sonido */}
         <button
           onClick={toggleSound}
           style={{
             position: "absolute",
             top: "20px",
-            right: "20px",
+            left: "20px",
             padding: "10px 16px",
             background: soundEnabled ? "#22c55e" : "#ef4444",
             border: "none",
@@ -191,27 +283,32 @@ export default function DisplayPage() {
 
         {/* Hora y clima */}
         <div
-  style={{
-    position: "absolute",
-    bottom: "20px",
-    left: "20px",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "flex-start",
-    gap: "8px",         // un poco más de espacio entre hora y clima
-    fontSize: "1.5rem",    // un poco más grande
-    fontWeight: "600",
-    color: "#fff",
-    zIndex: 10,
-  }}
->
-  <div>🕒 {hora}</div>
-  {weather && (
-    <div>
-      🌤️ {weather.name}: {Math.round(weather.main.temp)}°C
-    </div>
-  )}
-</div>
+          style={{
+            position: "absolute",
+            bottom: "20px",
+            left: "20px",
+            background: "rgba(0,0,0,0.5)",
+            border: "2px solid #fff",
+            borderRadius: "12px",
+            padding: "48px 48px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            gap: "6px",
+            fontSize: "1.5rem",
+            fontWeight: "600",
+            color: "#fff",
+            zIndex: 20,
+            boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
+          }}
+        >
+          <div>🕒 {hora}</div>
+          {weather && (
+            <div>
+              🌤️ {weather.name}: {Math.round(weather.main.temp)}°C
+            </div>
+          )}
+        </div>
 
         {/* Aviso */}
         <div
@@ -226,7 +323,7 @@ export default function DisplayPage() {
             boxShadow: "0px 0px 30px rgba(0,0,0,0.6)",
             transition: "all 0.5s ease-in-out",
             zIndex: 10,
-            whiteSpace: "pre-line", // ⬅️ Respetar saltos de línea
+            whiteSpace: "pre-line",
           }}
         >
           {aviso.titulo && (

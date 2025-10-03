@@ -11,24 +11,55 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [avisos, setAvisos] = useState([]);
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [youtubeMsg, setYoutubeMsg] = useState("");
   const router = useRouter();
 
   useEffect(() => {
-    const checkSession = async () => {
+    const init = async () => {
+      // Revisar sesión
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) router.push("/login");
-    };
-    checkSession();
-    cargarAvisos();
-  }, []);
+      if (!session) return router.push("/login");
 
-  const cargarAvisos = async () => {
-    const { data, error } = await supabase
-      .from("avisos")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (!error) setAvisos(data);
-  };
+      // Cargar avisos
+      const { data: avisosData, error: avisosError } = await supabase
+        .from("avisos")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (!avisosError) setAvisos(avisosData);
+
+      // Obtener link de YouTube
+      const { data: configData, error: configError } = await supabase
+        .from("configuracion")
+        .select("youtube_url")
+        .eq("id", 1)
+        .single();
+      if (!configError && configData?.youtube_url) setYoutubeUrl(configData.youtube_url);
+
+      // Suscripción a cambios en tiempo real
+      const channel = supabase
+        .channel("youtube-config")
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "configuracion",
+            filter: "id=eq.1",
+          },
+          (payload) => {
+            if (payload.new.youtube_url) {
+              setYoutubeUrl(payload.new.youtube_url);
+            }
+          }
+        )
+        .subscribe();
+
+      return () => supabase.removeChannel(channel);
+    };
+
+    init();
+  }, []);
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -47,7 +78,7 @@ export default function DashboardPage() {
       if ((tipo === "video" || tipo === "imagen") && file) {
         const fileExt = file.name.split(".").pop();
         const fileName = `${Date.now()}.${fileExt}`;
-        const folder = tipo === "video" ? "videos" : "imagens";
+        const folder = tipo === "video" ? "videos" : "imagenes";
         const filePath = `${folder}/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
@@ -80,10 +111,13 @@ export default function DashboardPage() {
       setTitulo("");
       setDescripcion("");
       setFile(null);
-      cargarAvisos();
+
+      // Recargar avisos
+      const { data: newAvisos } = await supabase.from("avisos").select("*").order("created_at", { ascending: false });
+      if (newAvisos) setAvisos(newAvisos);
     } catch (err) {
       console.error(err);
-      setMessage("❌ Error: " + err.message);
+      setMessage("❌ Error: " + (err.message || err));
     } finally {
       setLoading(false);
     }
@@ -91,26 +125,46 @@ export default function DashboardPage() {
 
   const borrarAviso = async (aviso) => {
     try {
-      // 1️⃣ Eliminar archivo del storage si aplica
       if (aviso.tipo === "video" && aviso.url) {
         const filePath = aviso.url.split("/avisos-media/")[1];
-        if (filePath) await supabase.storage.from("avisos-media").remove([filePath]);
+        if (filePath)
+          await supabase.storage.from("avisos-media").remove([filePath]);
       }
       if (aviso.tipo === "imagen" && aviso.imagen_url) {
         const filePath = aviso.imagen_url.split("/avisos-media/")[1];
-        if (filePath) await supabase.storage.from("avisos-media").remove([filePath]);
+        if (filePath)
+          await supabase.storage.from("avisos-media").remove([filePath]);
       }
 
-      // 2️⃣ Eliminar de la tabla
       const { error } = await supabase.from("avisos").delete().eq("id", aviso.id);
       if (error) throw error;
 
-      // 3️⃣ Actualizar lista
-      cargarAvisos();
+      // Recargar avisos
+      const { data: newAvisos } = await supabase.from("avisos").select("*").order("created_at", { ascending: false });
+      if (newAvisos) setAvisos(newAvisos);
     } catch (err) {
-      console.error("Error al borrar aviso:", err.message);
-      setMessage("❌ Error al eliminar aviso: " + err.message);
+      console.error("Error al borrar aviso:", err.message || err);
+      setMessage("❌ Error al eliminar aviso: " + (err.message || ""));
     }
+  };
+
+  const handleYoutubeChange = (e) => setYoutubeUrl(e.target.value);
+
+  const handleYoutubeSave = async () => {
+    const { error } = await supabase.from("configuracion").update({ youtube_url: youtubeUrl }).eq("id", 1);
+    if (error) {
+      console.error("Error al guardar URL:", error);
+      setYoutubeMsg("❌ Error al guardar URL");
+    } else {
+      setYoutubeMsg("✅ URL guardada correctamente");
+      setTimeout(() => setYoutubeMsg(""), 3000);
+    }
+  };
+
+  const getYoutubeEmbedUrl = (url) => {
+    if (!url) return "";
+    const match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    return match ? `https://www.youtube.com/embed/${match[1]}` : "";
   };
 
   return (
@@ -153,7 +207,9 @@ export default function DashboardPage() {
         Dashboard de Avisos
       </h1>
 
-      {/* Formulario */}
+  
+
+      {/* Formulario de avisos */}
       <form
         onSubmit={handleSubmit}
         style={{
@@ -170,139 +226,105 @@ export default function DashboardPage() {
           boxShadow: "0 4px 8px rgba(0,0,0,0.05)",
         }}
       >
-        <label style={{ fontWeight: "500" }}>
-          Tipo de aviso:
-          <select
-            value={tipo}
-            onChange={(e) => setTipo(e.target.value)}
-            style={{
-              padding: "10px",
-              fontSize: "1rem",
-              borderRadius: "8px",
-              border: "1px solid #ccc",
-              width: "100%",
-              marginTop: "5px",
-            }}
-          >
-            <option value="texto">Texto</option>
-            <option value="video">Video</option>
-            <option value="imagen">Imagen</option>
-          </select>
-        </label>
+        <label>Tipo de aviso:</label>
+        <select
+          value={tipo}
+          onChange={(e) => setTipo(e.target.value)}
+          style={{ padding: "8px", borderRadius: "8px", border: "1px solid #ccc" }}
+        >
+          <option value="texto">Texto</option>
+          <option value="video">Video</option>
+          <option value="imagen">Imagen</option>
+        </select>
 
+        <label>Título:</label>
         <input
           type="text"
-          placeholder="Título (opcional)"
           value={titulo}
           onChange={(e) => setTitulo(e.target.value)}
-          style={{
-            padding: "10px",
-            fontSize: "1rem",
-            borderRadius: "8px",
-            border: "1px solid #ccc",
-            color: "#000",
-          }}
+          style={{ padding: "8px", borderRadius: "8px", border: "1px solid #ccc" }}
         />
 
         {tipo === "texto" && (
           <>
+            <label>Descripción:</label>
             <textarea
-              placeholder="Descripción"
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
-              style={{
-                padding: "10px",
-                fontSize: "1rem",
-                borderRadius: "8px",
-                border: "1px solid #ccc",
-                minHeight: "100px",
-                whiteSpace: "pre-wrap", // Respeta saltos de línea
-              }}
-              required
+              rows={3}
+              style={{ padding: "8px", borderRadius: "8px", border: "1px solid #ccc" }}
             />
-            {/* Preview en tiempo real */}
-            <div
-              style={{
-                marginTop: "10px",
-                padding: "10px",
-                border: "1px dashed #999",
-                borderRadius: "8px",
-                background: "#f9f9f9",
-                fontFamily: "'Poppins', sans-serif",
-                whiteSpace: "pre-wrap",
-                maxHeight: "150px",
-                overflowY: "auto",
-              }}
-            >
-              {descripcion || "Vista previa del texto..."}
-            </div>
           </>
         )}
 
         {(tipo === "video" || tipo === "imagen") && (
-          <div style={{ marginTop: "10px" }}>
-            <label
-              htmlFor="fileUpload"
-              style={{
-                display: "inline-block",
-                padding: "10px 16px",
-                background: "#28a745",
-                color: "white",
-                borderRadius: "8px",
-                cursor: "pointer",
-                fontWeight: "600",
-                boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
-              }}
-            >
-              📂 Subir {tipo === "imagen" ? "Imagen" : "Video"}
-            </label>
+          <>
+            <label>Archivo ({tipo}):</label>
             <input
-              id="fileUpload"
               type="file"
-              accept={tipo === "imagen" ? "image/*" : "video/*"}
               onChange={(e) => setFile(e.target.files[0])}
-              style={{ display: "none" }}
-              required
+              accept={tipo === "video" ? "video/*" : "image/*"}
             />
-            {file && (
-              <p style={{ marginTop: "8px", fontSize: "0.9rem", color: "#333" }}>
-                ✅ Archivo seleccionado: <strong>{file.name}</strong>
-              </p>
-            )}
-          </div>
+          </>
         )}
 
         <button
           type="submit"
           disabled={loading}
           style={{
-            padding: "12px",
-            background: "#0070f3",
-            color: "white",
-            fontSize: "1.1rem",
-            fontWeight: "600",
+            background: "#0044cc",
+            color: "#fff",
             border: "none",
-            borderRadius: "10px",
+            padding: "10px",
+            borderRadius: "8px",
             cursor: "pointer",
             marginTop: "10px",
           }}
         >
-          {loading ? "Guardando..." : "Agregar Aviso"}
+          {loading ? "Guardando..." : "Agregar aviso"}
         </button>
       </form>
 
       {message && <p style={{ marginTop: "20px", textAlign: "center" }}>{message}</p>}
 
-      {/* Lista de avisos */}
-      <h2
+      {/* Sección de YouTube */}
+      <div
         style={{
-          marginTop: "40px",
-          textAlign: "center",
-          fontWeight: "600",
-          fontSize: "1.5rem",
-          color: "#000",
+          maxWidth: "500px",
+          margin: "30px auto",
+          padding: "20px",
+          border: "1px solid #ddd",
+          borderRadius: "12px",
+          background: "#fff",
         }}
       >
+        <label style={{ fontWeight: "500", color: "#2e2e2eff" }}>Link de YouTube:</label>
+        <input
+          type="text"
+          value={youtubeUrl}
+          onChange={handleYoutubeChange}
+          placeholder="https://www.youtube.com/watch?v=..."
+          style={{ padding: "10px", color: "#2e2e2eff", borderRadius: "8px", border: "1px solid #272727ff", width: "100%", marginTop: "8px" }}
+        />
+        <button
+          onClick={handleYoutubeSave}
+          style={{
+            marginTop: "10px",
+            padding: "8px 12px",
+            background: "#28a745",
+            color: "#fff",
+            border: "none",
+            borderRadius: "8px",
+            cursor: "pointer",
+          }}
+        >
+          Guardar Link
+        </button>
+        {youtubeMsg && <p style={{ marginTop: "10px", color: youtubeMsg.startsWith("❌") ? "red" : "green" }}>{youtubeMsg}</p>}
+      </div>
+
+      {/* Lista de avisos */}
+      <h2 style={{ marginTop: "40px", textAlign: "center", fontWeight: "600", fontSize: "1.5rem", color: "#000" }}>
         Avisos existentes
       </h2>
       <div style={{ maxWidth: "600px", margin: "20px auto" }}>
@@ -320,22 +342,12 @@ export default function DashboardPage() {
             }}
           >
             <div>
-              <strong style={{ fontSize: "1.1rem" }}>
-                {aviso.titulo || "(sin título)"}
-              </strong>{" "}
-              <span style={{ fontSize: "0.9rem", color: "#555" }}>
-                [{aviso.tipo}]
-              </span>
-              {aviso.tipo === "texto" && (
-                <p style={{ whiteSpace: "pre-wrap" }}>{aviso.descripcion}</p>
-              )}
+              <strong style={{ fontSize: "1.1rem" }}>{aviso.titulo || "(sin título)"}</strong>{" "}
+              <span style={{ fontSize: "0.9rem", color: "#555" }}>[{aviso.tipo}]</span>
+              {aviso.tipo === "texto" && <p style={{ whiteSpace: "pre-wrap" }}>{aviso.descripcion}</p>}
               {aviso.tipo === "video" && <p>🎬 Video subido</p>}
               {aviso.tipo === "imagen" && (
-                <img
-                  src={aviso.imagen_url}
-                  alt="preview"
-                  style={{ borderRadius: "12px", maxWidth: "100%" }}
-                />
+                <img src={aviso.imagen_url} alt="preview" style={{ borderRadius: "12px", maxWidth: "100%" }} />
               )}
             </div>
             <button
