@@ -207,8 +207,6 @@ export default function DashboardPage() {
         Dashboard de Avisos
       </h1>
 
-  
-
       {/* Formulario de avisos */}
       <form
         onSubmit={handleSubmit}
@@ -260,8 +258,30 @@ export default function DashboardPage() {
         {(tipo === "video" || tipo === "imagen") && (
           <>
             <label>Archivo ({tipo}):</label>
+
+            {/* Botón centrado para subir archivo */}
+            <div style={{ textAlign: "center", marginBottom: "8px" }}>
+              <button
+                type="button"
+                onClick={() => document.getElementById("fileInput").click()}
+                style={{
+                  padding: "10px 16px",
+                  background: "#0044cc",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                }}
+              >
+                Subir {tipo}
+              </button>
+            </div>
+
+            {/* Input oculto */}
             <input
               type="file"
+              id="fileInput"
+              style={{ display: "none" }}
               onChange={(e) => setFile(e.target.files[0])}
               accept={tipo === "video" ? "video/*" : "image/*"}
             />
