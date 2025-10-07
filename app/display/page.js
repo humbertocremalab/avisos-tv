@@ -13,9 +13,9 @@ export default function DisplayPage() {
 
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [audio, setAudio] = useState(null);
+
   const [weather, setWeather] = useState(null);
   const [youtubeUrl, setYoutubeUrl] = useState("");
-  const [userInteracted, setUserInteracted] = useState(false); // 👈 NUEVO
 
   // ---------------- Inicialización ----------------
   useEffect(() => {
@@ -142,21 +142,6 @@ export default function DisplayPage() {
     fetchYoutube();
   }, []);
 
-  // ---------------- Reproduce nuevo video automáticamente sin mute ----------------
-  useEffect(() => {
-    if (userInteracted && youtubeRef.current) {
-      const iframe = youtubeRef.current;
-      iframe.contentWindow?.postMessage(
-        '{"event":"command","func":"unMute","args":""}',
-        "*"
-      );
-      iframe.contentWindow?.postMessage(
-        '{"event":"command","func":"playVideo","args":""}',
-        "*"
-      );
-    }
-  }, [youtubeUrl]);
-
   // ---------------- Rotación de avisos ----------------
   useEffect(() => {
     if (avisos.length === 0) return;
@@ -282,19 +267,18 @@ export default function DisplayPage() {
               key={youtubeUrl}
               src={`https://www.youtube.com/embed/${extractVideoId(
                 youtubeUrl
-              )}?autoplay=1&mute=${userInteracted ? 0 : 1}&loop=1&playlist=${extractVideoId(
+              )}?autoplay=1&mute=0&loop=1&playlist=${extractVideoId(
                 youtubeUrl
               )}&playsinline=1&controls=1&rel=0&modestbranding=1&enablejsapi=1`}
               title="YouTube Display"
               frameBorder="0"
-              allow="autoplay; encrypted-media; picture-in-picture"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
               style={{
                 width: "100%",
                 height: "100%",
                 border: "none",
               }}
-              onClick={() => setUserInteracted(true)} // 👈 registra interacción
             ></iframe>
           </div>
         )}
