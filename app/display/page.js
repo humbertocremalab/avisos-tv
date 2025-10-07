@@ -218,30 +218,42 @@ const extractVideoId = (url) => {
         }}
       >
         
-      {/* YouTube iframe en esquina inferior derecha */}
+
+{/* 🎥 YouTube player responsivo, compatible con iOS */}
 {youtubeUrl && extractVideoId(youtubeUrl) && (
-  <iframe
-    id="youtube-player"
-    key={youtubeUrl}
-    src={`https://www.youtube.com/embed/${extractVideoId(
-      youtubeUrl
-    )}?autoplay=1&mute=1&playsinline=1&controls=1&rel=0`}
+  <div
     style={{
       position: "absolute",
       bottom: "20px",
       right: "20px",
       width: "320px",
-      height: "180px",
+      maxWidth: "90vw",
+      aspectRatio: "16/9",
       borderRadius: "12px",
+      overflow: "hidden",
       border: "2px solid #fff",
+      backgroundColor: "#000",
       zIndex: 20,
-      backgroundColor: "#000", // 👈 fuerza el contenedor para ver si el frame se monta
+      boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
     }}
-    title="YouTube Display"
-    frameBorder="0"
-    allow="autoplay; fullscreen; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-    allowFullScreen
-  />
+  >
+    <iframe
+      id="youtube-player"
+      key={youtubeUrl}
+      src={`https://www.youtube.com/embed/${extractVideoId(
+        youtubeUrl
+      )}?autoplay=1&mute=1&playsinline=1&controls=1&rel=0&modestbranding=1`}
+      title="YouTube Display"
+      frameBorder="0"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      allowFullScreen
+      style={{
+        width: "100%",
+        height: "100%",
+        border: "none",
+      }}
+    ></iframe>
+  </div>
 )}
 
 
