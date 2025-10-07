@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
-import { supabase } from "../../supabaseClient";  
+import { supabase } from "../../supabaseClient";
 import confetti from "canvas-confetti";
 
 export default function DisplayPage() {
@@ -8,15 +8,13 @@ export default function DisplayPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shownIds, setShownIds] = useState(new Set());
   const videoRef = useRef(null);
-  const youtubeRef = useRef(null); // ✅ Nuevo ref para el iframe de YouTube
+  const youtubeRef = useRef(null);
   const ROTATION_TIME = 30000;
 
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [audio, setAudio] = useState(null);
 
   const [weather, setWeather] = useState(null);
-
-  // ---------------- YouTube ----------------
   const [youtubeUrl, setYoutubeUrl] = useState("");
 
   // ---------------- Inicialización ----------------
@@ -38,6 +36,7 @@ export default function DisplayPage() {
       .catch((err) => console.log("Error clima:", err));
   }, []);
 
+  // ---------------- Botón ON/OFF (solo controla la alerta) ----------------
   const toggleSound = () => {
     if (!soundEnabled) {
       const newAudio = new Audio("/audio/alerta.ogg");
@@ -52,7 +51,7 @@ export default function DisplayPage() {
     }
   };
 
-  // ---------------- Control del reproductor de YouTube ----------------
+  // ---------------- Control del YouTube player ----------------
   const pauseYoutube = () => {
     if (youtubeRef.current) {
       youtubeRef.current.contentWindow.postMessage(
@@ -152,9 +151,11 @@ export default function DisplayPage() {
     if (aviso.tipo === "video") {
       const video = videoRef.current;
       if (video) {
+        video.muted = true;
         const handleEnded = () =>
           setCurrentIndex((prev) => (prev + 1) % avisos.length);
         video.addEventListener("ended", handleEnded);
+        video.play().catch(() => {});
         return () => video.removeEventListener("ended", handleEnded);
       }
     } else {
@@ -173,14 +174,12 @@ export default function DisplayPage() {
 
     if (!shownIds.has(aviso.id) && aviso.tipo === "texto") {
       if (soundEnabled && audio) {
-        pauseYoutube(); // ✅ Pausar YouTube mientras suena el aviso
+        pauseYoutube();
         audio.currentTime = 0;
         audio
           .play()
           .then(() => {
-            audio.onended = () => {
-              resumeYoutube(); // ✅ Reanudar YouTube al terminar el audio
-            };
+            audio.onended = () => resumeYoutube();
           })
           .catch((e) => console.log("Error al reproducir audio", e));
       }
@@ -210,7 +209,6 @@ export default function DisplayPage() {
   const aviso = avisos[currentIndex];
   const hora = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-  // Función para extraer el ID de YouTube
   const extractVideoId = (url) => {
     if (!url) return null;
     const match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
@@ -245,8 +243,7 @@ export default function DisplayPage() {
           position: "relative",
         }}
       >
-        
-        {/* 🎥 YouTube player responsivo */}
+        {/* 🎵 YouTube player (música de fondo continua) */}
         {youtubeUrl && extractVideoId(youtubeUrl) && (
           <div
             style={{
@@ -264,27 +261,29 @@ export default function DisplayPage() {
               boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
             }}
           >
-         <iframe
-  ref={youtubeRef}
-  id="youtube-player"
-  key={youtubeUrl + (soundEnabled ? "-unmuted" : "-muted")}
-  src={`https://www.youtube.com/embed/${extractVideoId(
-    youtubeUrl
-  )}?autoplay=1&mute=${soundEnabled ? 0 : 1}&playsinline=1&controls=1&rel=0&modestbranding=1&enablejsapi=1`}
-  title="YouTube Display"
-  frameBorder="0"
-  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-  allowFullScreen
-  style={{
-    width: "100%",
-    height: "100%",
-    border: "none",
-  }}
-></iframe>
+            <iframe
+              ref={youtubeRef}
+              id="youtube-player"
+              key={youtubeUrl}
+              src={`https://www.youtube.com/embed/${extractVideoId(
+                youtubeUrl
+              )}?autoplay=1&mute=0&loop=1&playlist=${extractVideoId(
+                youtubeUrl
+              )}&playsinline=1&controls=1&rel=0&modestbranding=1&enablejsapi=1`}
+              title="YouTube Display"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              style={{
+                width: "100%",
+                height: "100%",
+                border: "none",
+              }}
+            ></iframe>
           </div>
         )}
 
-        {/* Botón de sonido */}
+        {/* Botón de sonido (solo alerta) */}
         <button
           onClick={toggleSound}
           style={{
@@ -302,7 +301,7 @@ export default function DisplayPage() {
             zIndex: 10,
           }}
         >
-          {soundEnabled ? "🔊 Sonido ON" : "🔇 Sonido OFF"}
+          {soundEnabled ? "🔔 Alertas ON" : "🔕 Alertas OFF"}
         </button>
 
         {/* Hora y clima */}
@@ -334,7 +333,7 @@ export default function DisplayPage() {
           )}
         </div>
 
-        {/* Aviso */}
+        {/* Aviso principal */}
         <div
           key={aviso.id}
           style={{
@@ -374,6 +373,7 @@ export default function DisplayPage() {
               src={aviso.url}
               autoPlay
               muted
+              playsInline
               controls={false}
               style={{ width: "100%", borderRadius: "12px" }}
             />
