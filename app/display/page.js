@@ -110,55 +110,37 @@ export default function DisplayPage() {
     return () => supabase.removeChannel(channel);
   }, []);
 
-// ---------------- Suscripción a cambios en YouTube ----------------
-useEffect(() => {
-  const fetchYoutube = async () => {
-    const { data, error } = await supabase
-      .from("configuracion")
-      .select("youtube_url")
-      .eq("id", 1)
-      .single();
+  // ---------------- Suscripción a cambios en YouTube ----------------
+  useEffect(() => {
+    const fetchYoutube = async () => {
+      const { data, error } = await supabase
+        .from("configuracion")
+        .select("youtube_url")
+        .eq("id", 1)
+        .single();
+      if (!error && data?.youtube_url) setYoutubeUrl(data.youtube_url);
 
-    if (!error && data?.youtube_url) setYoutubeUrl(data.youtube_url);
-
-    const channel = supabase
-      .channel("youtube-display")
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "configuracion",
-          filter: "id=eq.1",
-        },
-        (payload) => {
-          if (payload.new.youtube_url) {
-            setYoutubeUrl(payload.new.youtube_url);
-
-            // 💡 Si el usuario ya activó el sonido, desmuteamos el nuevo video
-            if (soundEnabled && youtubeRef.current) {
-              // Esperar un poco para que el iframe reciba el postMessage correctamente
-              setTimeout(() => {
-                youtubeRef.current.contentWindow.postMessage(
-                  '{"event":"command","func":"unMute","args":""}',
-                  "*"
-                );
-                youtubeRef.current.contentWindow.postMessage(
-                  '{"event":"command","func":"playVideo","args":""}',
-                  "*"
-                );
-              }, 1200);
-            }
+      const channel = supabase
+        .channel("youtube-display")
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "configuracion",
+            filter: "id=eq.1",
+          },
+          (payload) => {
+            if (payload.new.youtube_url) setYoutubeUrl(payload.new.youtube_url);
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
 
-    return () => supabase.removeChannel(channel);
-  };
+      return () => supabase.removeChannel(channel);
+    };
 
-  fetchYoutube();
-}, [soundEnabled]);
+    fetchYoutube();
+  }, []);
 
   // ---------------- Rotación de avisos ----------------
   useEffect(() => {
