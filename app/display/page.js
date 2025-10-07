@@ -264,23 +264,23 @@ export default function DisplayPage() {
               boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
             }}
           >
-            <iframe
-              ref={youtubeRef} // ✅ Referencia agregada
-              id="youtube-player"
-              key={youtubeUrl}
-              src={`https://www.youtube.com/embed/${extractVideoId(
-                youtubeUrl
-              )}?autoplay=1&mute=1&playsinline=1&controls=1&rel=0&modestbranding=1&enablejsapi=1`}
-              title="YouTube Display"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-              style={{
-                width: "100%",
-                height: "100%",
-                border: "none",
-              }}
-            ></iframe>
+         <iframe
+  ref={youtubeRef}
+  id="youtube-player"
+  key={youtubeUrl + (soundEnabled ? "-unmuted" : "-muted")}
+  src={`https://www.youtube.com/embed/${extractVideoId(
+    youtubeUrl
+  )}?autoplay=1&mute=${soundEnabled ? 0 : 1}&playsinline=1&controls=1&rel=0&modestbranding=1&enablejsapi=1`}
+  title="YouTube Display"
+  frameBorder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  allowFullScreen
+  style={{
+    width: "100%",
+    height: "100%",
+    border: "none",
+  }}
+></iframe>
           </div>
         )}
 
