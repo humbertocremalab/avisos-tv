@@ -8,16 +8,16 @@ export default function DisplayPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shownIds, setShownIds] = useState(new Set());
   const videoRef = useRef(null);
-  const youtubeRef = useRef(null); // ✅ Nuevo ref para el iframe de YouTube
   const ROTATION_TIME = 30000;
 
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [audio, setAudio] = useState(null);
-
   const [weather, setWeather] = useState(null);
 
   // ---------------- YouTube ----------------
   const [youtubeUrl, setYoutubeUrl] = useState("");
+  const youtubeRef = useRef(null); // ✅ NUEVO: referencia al iframe
+  const [youtubeMuted, setYoutubeMuted] = useState(true); // ✅ NUEVO: estado de mute/desmuteo
 
   // ---------------- Inicialización ----------------
   useEffect(() => {
@@ -52,7 +52,7 @@ export default function DisplayPage() {
     }
   };
 
-  // ---------------- Control del reproductor de YouTube ----------------
+  // ---------------- Control YouTube ----------------
   const pauseYoutube = () => {
     if (youtubeRef.current) {
       youtubeRef.current.contentWindow.postMessage(
@@ -70,6 +70,28 @@ export default function DisplayPage() {
       );
     }
   };
+
+  // ✅ NUEVO: escuchar cambios en mute/desmuteo del iframe
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (typeof event.data === "string" && event.data.includes("playerStateChange")) {
+        // Nada que hacer por ahora
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
+  // ✅ NUEVO: permitir guardar si el usuario desmuteó manualmente
+  const handleYoutubeInteraction = () => {
+    setYoutubeMuted(false);
+    localStorage.setItem("youtubeMuted", "false");
+  };
+
+  useEffect(() => {
+    const mutedSetting = localStorage.getItem("youtubeMuted");
+    if (mutedSetting === "false") setYoutubeMuted(false);
+  }, []);
 
   // ---------------- Fetch avisos ----------------
   const fetchAvisos = async () => {
@@ -173,14 +195,12 @@ export default function DisplayPage() {
 
     if (!shownIds.has(aviso.id) && aviso.tipo === "texto") {
       if (soundEnabled && audio) {
-        pauseYoutube(); // ✅ Pausar YouTube mientras suena el aviso
+        pauseYoutube();
         audio.currentTime = 0;
         audio
           .play()
           .then(() => {
-            audio.onended = () => {
-              resumeYoutube(); // ✅ Reanudar YouTube al terminar el audio
-            };
+            audio.onended = () => resumeYoutube();
           })
           .catch((e) => console.log("Error al reproducir audio", e));
       }
@@ -210,7 +230,6 @@ export default function DisplayPage() {
   const aviso = avisos[currentIndex];
   const hora = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-  // Función para extraer el ID de YouTube
   const extractVideoId = (url) => {
     if (!url) return null;
     const match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
@@ -245,8 +264,8 @@ export default function DisplayPage() {
           position: "relative",
         }}
       >
-        
-        {/* 🎥 YouTube player responsivo */}
+
+        {/* 🎥 YouTube player */}
         {youtubeUrl && extractVideoId(youtubeUrl) && (
           <div
             style={{
@@ -265,16 +284,17 @@ export default function DisplayPage() {
             }}
           >
             <iframe
-              ref={youtubeRef} // ✅ Referencia agregada
+              ref={youtubeRef}
               id="youtube-player"
               key={youtubeUrl}
               src={`https://www.youtube.com/embed/${extractVideoId(
                 youtubeUrl
-              )}?autoplay=1&mute=1&playsinline=1&controls=1&rel=0&modestbranding=1&enablejsapi=1`}
+              )}?autoplay=1&mute=${youtubeMuted ? 1 : 0}&playsinline=1&controls=1&rel=0&modestbranding=1`}
               title="YouTube Display"
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
+              onClick={handleYoutubeInteraction} // ✅ detecta si el usuario hace click (desmutea)
               style={{
                 width: "100%",
                 height: "100%",
@@ -284,7 +304,7 @@ export default function DisplayPage() {
           </div>
         )}
 
-        {/* Botón de sonido */}
+        {/* 🔊 Botón sonido */}
         <button
           onClick={toggleSound}
           style={{
@@ -305,7 +325,7 @@ export default function DisplayPage() {
           {soundEnabled ? "🔊 Sonido ON" : "🔇 Sonido OFF"}
         </button>
 
-        {/* Hora y clima */}
+        {/* 🕒 Hora y clima */}
         <div
           style={{
             position: "absolute",
@@ -334,7 +354,7 @@ export default function DisplayPage() {
           )}
         </div>
 
-        {/* Aviso */}
+        {/* 📝 Aviso */}
         <div
           key={aviso.id}
           style={{
